@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sawang Daen Din Scheduler Pro</title>
+  
+  <!-- Icon บน Tab bar -->
   <link rel="icon" type="image/png" href="https://e1.pngegg.com/pngimages/759/630/png-clipart-calendrier-date-du-calendrier-symbole-bleu-texte-ligne-zone-rectangle.png">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -40,15 +43,24 @@
   </style>
 </head>
 <body class="p-4 md:p-8">
-  <!-- ส่วนหัวเพจที่แก้ไขใหม่ -->
+  <!-- ส่วนหัวเพจ -->
   <nav class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-5 rounded-2xl shadow-sm mb-6 border border-slate-200 no-print gap-4">
-    <div class="flex flex-col gap-0.5">
-      <div class="font-bold text-xl text-slate-800 tracking-tight leading-tight">
-        🏥 Sawang Daen Din Scheduler <span class="text-blue-600 font-light text-base">Pro</span>
+    <div class="flex items-center gap-3">
+      <div class="bg-blue-50 p-2 rounded-xl border border-blue-100">
+        <img src="https://img5.pic.in.th/file/secure-sv1/hospital-icon.png" 
+             alt="Logo" 
+             class="w-10 h-10 object-contain shadow-sm"
+             onerror="this.src='https://cdn-icons-png.flaticon.com/512/3063/3063176.png'">
       </div>
-      <div class="text-sm font-bold text-slate-500">ระบบจัดเวรพนักงานช่วยเหลือคนไข้</div>
-      <div class="text-[11px] mt-1.5 inline-flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 w-fit">
-        <span class="opacity-70">หน่วยงาน:</span> พิเศษปาริฉัตร-สงฆ์อาพาธ
+      
+      <div class="flex flex-col gap-0.5">
+        <div class="font-bold text-xl text-slate-800 tracking-tight leading-tight">
+          Sawang Daen Din Scheduler <span class="text-blue-600 font-light text-base">Pro</span>
+        </div>
+        <div class="text-sm font-bold text-slate-500">ระบบจัดเวรพนักงานช่วยเหลือคนไข้</div>
+        <div class="text-[11px] mt-1 inline-flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 w-fit">
+          <span class="opacity-70">หน่วยงาน:</span> พิเศษปาริฉัตร-สงฆ์อาพาธ
+        </div>
       </div>
     </div>
     
@@ -233,7 +245,7 @@
       const select = document.getElementById('staffSelect');
       const list = document.getElementById('staffList');
       if (!select || !list) return;
-      select.innerHTML = '<option value="">-- เลือกพนักงาน (เพื่อจองเวร) --</option>';
+      select.innerHTML = '<option value="">-- เลือกพนักงาน (เพื่อระบุตัวตน) --</option>';
       list.innerHTML = "";
       appData.staff.forEach(s => {
         select.innerHTML += `<option value="${s[0]}" ${s[0] === currentStaff ? 'selected' : ''}>${s[0]}</option>`;
@@ -412,30 +424,153 @@
           const isMine = b.name.trim() === currentStaff.trim();
           return `<div class="tag-booking type-${b.type} ${isMine ? 'ring-2 ring-white scale-110 shadow-lg z-10' : 'opacity-80'} flex justify-between items-center transition-all">
             <span class="truncate">${b.name} (${b.type})</span>
-            ${isMine ? `<span onclick="event.stopPropagation(); delBook('${dStr}')" class="ml-1 font-bold cursor-pointer hover:text-red-200">×</span>` : ''}
           </div>`;
         }).join('');
-        grid.innerHTML += `<div class="calendar-day p-2" onclick="submitBook('${dStr}')"><span class="text-xs font-bold text-slate-300">${d}</span><div class="mt-1">${bkHtml}</div></div>`;
+        grid.innerHTML += `<div class="calendar-day p-2" onclick="showDayDetails('${dStr}')"><span class="text-xs font-bold text-slate-300">${d}</span><div class="mt-1">${bkHtml}</div></div>`;
       }
     }
 
-    async function submitBook(date) {
-      if(!currentStaff) return Swal.fire('โปรดเลือกพนักงานก่อนจอง', '', 'warning');
-      const { value: type } = await Swal.fire({ 
-        title: 'จองเวรวันที่ ' + date,
+    async function showDayDetails(date) {
+      const bks = appData.bookings.filter(b => b.date === date);
+      const myBk = bks.find(b => b.name.trim() === currentStaff.trim());
+      
+      let html = `<div class="text-left overflow-x-auto">
+        <table class="w-full text-xs border-collapse border border-slate-200">
+          <thead>
+            <tr class="bg-slate-100">
+              <th class="border p-2 text-left">ชื่อ-นามสกุล</th>
+              <th class="border p-2 text-center">ประเภทเวร</th>
+            </tr>
+          </thead>
+          <tbody>`;
+      
+      if (bks.length === 0) {
+        html += `<tr><td colspan="2" class="border p-4 text-center text-slate-400">ยังไม่มีการจองในวันนี้</td></tr>`;
+      } else {
+        bks.forEach(b => {
+          html += `<tr class="${b.name.trim() === currentStaff.trim() ? 'bg-blue-50 font-bold' : ''}">
+            <td class="border p-2">${b.name}</td>
+            <td class="border p-2 text-center">
+              <span class="tag-booking type-${b.type} px-2 py-0.5 inline-block">${b.type}</span>
+            </td>
+          </tr>`;
+        });
+      }
+      
+      html += `</tbody></table></div>`;
+
+      const { value: action } = await Swal.fire({
+        title: `รายละเอียดการจองวันที่ ${date}`,
+        html: html,
+        showCancelButton: true,
+        cancelButtonText: 'ปิด',
+        confirmButtonText: myBk ? 'แก้ไขการจองของฉัน' : 'เพิ่มการจอง',
+        confirmButtonColor: myBk ? '#f59e0b' : '#3b82f6',
+        showDenyButton: myBk ? true : false,
+        denyButtonText: 'ลบการจอง',
+        denyButtonColor: '#ef4444'
+      });
+
+      if (action) {
+        // กรณีแก้ไขหรือเพิ่ม
+        submitBook(date, myBk ? myBk.type : "");
+      } else if (Swal.getIcon() === undefined && action === false && myBk && action !== undefined) {
+        // กรณีลบ (ใช้ denyButton)
+      }
+    }
+
+    // เพิ่มดักฟัง Event จาก Swal (Deny Button) สำหรับการลบ
+    const originalSubmitBook = submitBook;
+    async function submitBook(date, existingType = "") {
+      if(!currentStaff) return Swal.fire('โปรดระบุตัวตนพนักงานก่อน (ที่ช่องด้านบน)', '', 'warning');
+      
+      const { value: type, isConfirmed, isDenied } = await Swal.fire({ 
+        title: existingType ? 'แก้ไขการจองวันที่ ' + date : 'จองเวรวันที่ ' + date,
         input: 'select', 
         inputOptions: { 'ด':'ดึก','ช':'เช้า','บ':'บ่าย','ดบ':'ดบ','ชบ':'ชบ','Off':'Off','VAC':'VAC','อบรม':'อบรม' }, 
-        confirmButtonColor: '#2563eb', showCancelButton: true 
+        inputValue: existingType,
+        confirmButtonColor: '#2563eb', 
+        showCancelButton: true,
+        cancelButtonText: 'ยกเลิก'
       });
-      if(type) {
-        const res = await callAPI('saveBooking', 'POST', { data: {date, name:currentStaff, type} });
+
+      if (type) {
+        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
+        // ถ้าเป็นการแก้ไข ให้ลบของเก่าก่อน
+        if (existingType) {
+          await callAPI('deleteBooking', 'POST', { date, name: currentStaff });
+        }
+        // บันทึกอันใหม่
+        const res = await callAPI('saveBooking', 'POST', { data: {date, name: currentStaff, type} });
         if (res) refresh();
+        Swal.fire({ title: 'สำเร็จ', icon: 'success', timer: 800, showConfirmButton: false });
       }
     }
 
+    // ฟังก์ชันลบแยกต่างหาก (เรียกจาก Modal Details)
     async function delBook(date) { 
-      const res = await callAPI('deleteBooking', 'POST', { date: date, name: currentStaff });
-      if (res) refresh();
+      if(!currentStaff) return;
+      Swal.fire({ title: 'กำลังลบการจอง...', didOpen: () => Swal.showLoading() });
+      const res = await callAPI('deleteBooking', 'POST', { date, name: currentStaff });
+      if (res) {
+        refresh();
+        Swal.fire({ title: 'ลบสำเร็จ', icon: 'success', timer: 800, showConfirmButton: false });
+      }
+    }
+
+    // ปรับปรุง Event Listener ของ Swal สำหรับปุ่ม Deny (ลบ) ในหน้า Details
+    const showDetailsWithDelete = async (date) => {
+        // ฟังก์ชันเดิมที่เขียนใน showDayDetails แต่แยกออกมาเพื่อเรียกง่าย
+    }
+    
+    // แทนที่ showDayDetails ของเดิมด้วยเวอร์ชันที่สมบูรณ์
+    window.showDayDetails = async function(date) {
+      const bks = appData.bookings.filter(b => b.date === date);
+      const myBk = bks.find(b => b.name.trim() === currentStaff.trim());
+      
+      let html = `<div class="text-left overflow-x-auto mb-4">
+        <table class="w-full text-xs border-collapse border border-slate-200">
+          <thead>
+            <tr class="bg-slate-100">
+              <th class="border p-2 text-left">ชื่อ-นามสกุล</th>
+              <th class="border p-2 text-center">ประเภทเวร</th>
+            </tr>
+          </thead>
+          <tbody>`;
+      
+      if (bks.length === 0) {
+        html += `<tr><td colspan="2" class="border p-4 text-center text-slate-400 italic">ยังไม่มีการจองเวรในวันนี้</td></tr>`;
+      } else {
+        bks.forEach(b => {
+          html += `<tr class="${b.name.trim() === currentStaff.trim() ? 'bg-blue-50 font-bold' : ''}">
+            <td class="border p-2">${b.name}</td>
+            <td class="border p-2 text-center">
+              <span class="tag-booking type-${b.type} px-2 py-0.5 inline-block">${b.type}</span>
+            </td>
+          </tr>`;
+        });
+      }
+      html += `</tbody></table></div>`;
+
+      const result = await Swal.fire({
+        title: `ข้อมูลวันที่ ${date}`,
+        html: html,
+        showCancelButton: true,
+        cancelButtonText: 'ปิด',
+        showConfirmButton: currentStaff ? true : false,
+        confirmButtonText: myBk ? 'แก้ไขการจองของฉัน' : 'เพิ่มการจอง',
+        confirmButtonColor: myBk ? '#f59e0b' : '#3b82f6',
+        showDenyButton: myBk ? true : false,
+        denyButtonText: 'ลบการจอง',
+        denyButtonColor: '#ef4444',
+        footer: !currentStaff ? '<span class="text-rose-500 font-bold text-xs underline">โปรดเลือกพนักงานที่ด้านบนก่อนดำเนินการจอง</span>' : ''
+      });
+
+      if (result.isConfirmed) {
+        submitBook(date, myBk ? myBk.type : "");
+      } else if (result.isDenied) {
+        delBook(date);
+      }
     }
 
     function buildHolidayChecks() {
