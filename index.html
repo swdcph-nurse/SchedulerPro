@@ -94,46 +94,85 @@
     <div id="tab-schedule" class="tab-content">
       <div class="bg-white p-6 rounded-3xl shadow-sm mb-6 border border-slate-200 no-print text-[11px]">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          <!-- เลือกเดือน/ปี -->
           <div class="md:col-span-2">
-            <label class="font-bold text-slate-400 mb-1 block text-[10px]">เดือน / ปี พ.ศ.</label>
-            <div class="flex gap-1">
-              <select id="runMonth" onchange="handleMonthYearChange()" class="border p-1.5 rounded-lg w-full text-xs"></select>
-              <select id="runYear" onchange="handleMonthYearChange()" class="border p-1.5 rounded-lg text-xs">
+            <label class="font-bold text-slate-400 mb-1 block text-[10px] uppercase tracking-wider">ระยะเวลา</label>
+            <div class="flex flex-col gap-1">
+              <select id="runMonth" onchange="handleMonthYearChange()" class="border p-2 rounded-lg w-full text-xs font-bold"></select>
+              <select id="runYear" onchange="handleMonthYearChange()" class="border p-2 rounded-lg text-xs font-bold bg-slate-50">
                 <option value="2024">2567</option><option value="2025">2568</option>
                 <option value="2026" selected>2569</option><option value="2027">2570</option>
               </select>
             </div>
           </div>
-          <div class="md:col-span-4 text-center">
-             <label class="font-bold text-slate-400 mb-1 block text-[10px]">อัตรากำลัง (จริง / เสริม)</label>
-             <div class="grid grid-cols-6 gap-1">
-               <input id="q_wd_r_n" type="number" value="1" class="border p-1 text-center rounded-lg" title="จริง-ดึก">
-               <input id="q_wd_r_m" type="number" value="2" class="border p-1 text-center rounded-lg" title="จริง-เช้า">
-               <input id="q_wd_r_a" type="number" value="2" class="border p-1 text-center rounded-lg" title="จริง-บ่าย">
-               <input id="q_wd_s_n" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50" title="เสริม-ดึก">
-               <input id="q_wd_s_m" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50" title="เสริม-เช้า">
-               <input id="q_wd_s_a" type="number" value="1" class="border p-1 text-center rounded-lg bg-amber-50" title="เสริม-บ่าย">
+
+          <!-- อัตรากำลัง วันทำการ -->
+          <div class="md:col-span-3">
+             <div class="text-center mb-1">
+               <label class="font-bold text-blue-600 block text-[10px] uppercase">วันทำการ (จ-ศ)</label>
+               <span class="text-[9px] text-slate-400 italic">ดึก | เช้า | บ่าย</span>
+             </div>
+             <div class="grid grid-cols-3 gap-1 mb-1">
+               <input id="q_wd_r_n" type="number" value="1" class="border p-1 text-center rounded-lg focus:ring-2 focus:ring-blue-300 outline-none" title="จริง-ดึก">
+               <input id="q_wd_r_m" type="number" value="2" class="border p-1 text-center rounded-lg focus:ring-2 focus:ring-blue-300 outline-none" title="จริง-เช้า">
+               <input id="q_wd_r_a" type="number" value="2" class="border p-1 text-center rounded-lg focus:ring-2 focus:ring-blue-300 outline-none" title="จริง-บ่าย">
+             </div>
+             <div class="grid grid-cols-3 gap-1">
+               <input id="q_wd_s_n" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50 outline-none" title="เสริม-ดึก">
+               <input id="q_wd_s_m" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50 outline-none" title="เสริม-เช้า">
+               <input id="q_wd_s_a" type="number" value="1" class="border p-1 text-center rounded-lg bg-amber-50 outline-none" title="เสริม-บ่าย">
              </div>
           </div>
-          <div class="md:col-span-4 flex gap-1">
-            <button onclick="processAuto()" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 shadow-md text-xs">จัดเวรอัตโนมัติ</button>
-            <button onclick="clearScheduleUI()" class="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-orange-600 shadow-md text-xs">ล้างข้อมูล</button>
-            <button onclick="saveSchedule()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-emerald-700 shadow-md text-xs">บันทึก</button>
+
+          <!-- อัตรากำลัง วันหยุด -->
+          <div class="md:col-span-3">
+             <div class="text-center mb-1">
+               <label class="font-bold text-rose-600 block text-[10px] uppercase">วันหยุด (ส-อา)</label>
+               <span class="text-[9px] text-slate-400 italic">ดึก | เช้า | บ่าย</span>
+             </div>
+             <div class="grid grid-cols-3 gap-1 mb-1">
+               <input id="q_hd_r_n" type="number" value="1" class="border p-1 text-center rounded-lg focus:ring-2 focus:ring-rose-300 outline-none" title="หยุด-จริง-ดึก">
+               <input id="q_hd_r_m" type="number" value="1" class="border p-1 text-center rounded-lg focus:ring-2 focus:ring-rose-300 outline-none" title="หยุด-จริง-เช้า">
+               <input id="q_hd_r_a" type="number" value="1" class="border p-1 text-center rounded-lg focus:ring-2 focus:ring-rose-300 outline-none" title="หยุด-จริง-บ่าย">
+             </div>
+             <div class="grid grid-cols-3 gap-1">
+               <input id="q_hd_s_n" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50 outline-none" title="หยุด-เสริม-ดึก">
+               <input id="q_hd_s_m" type="number" value="1" class="border p-1 text-center rounded-lg bg-amber-50 outline-none" title="หยุด-เสริม-เช้า">
+               <input id="q_hd_s_a" type="number" value="1" class="border p-1 text-center rounded-lg bg-amber-50 outline-none" title="หยุด-เสริม-บ่าย">
+             </div>
           </div>
-          <div id="holidayCheck" class="md:col-span-2 flex flex-wrap gap-1 h-[40px] overflow-y-auto border p-1 rounded-lg bg-slate-50"></div>
+
+          <!-- วันหยุดพิเศษ -->
+          <div class="md:col-span-2">
+             <label class="font-bold text-slate-400 mb-1 block text-[10px] uppercase">วันหยุดพิเศษ</label>
+             <div id="holidayCheck" class="flex flex-wrap gap-1 h-[68px] overflow-y-auto border p-1 rounded-lg bg-slate-50 border-dashed border-slate-300"></div>
+          </div>
+
+          <!-- ปุ่มดำเนินการ -->
+          <div class="md:col-span-2 flex flex-col gap-1.5">
+            <button onclick="processAuto()" class="bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 shadow-md transition-all active:scale-95 text-[10px]">จัดเวรอัตโนมัติ</button>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="clearScheduleUI()" class="bg-orange-500 text-white py-2 rounded-xl font-bold hover:bg-orange-600 transition-all text-[10px]">ล้างข้อมูล</button>
+              <button onclick="saveSchedule()" class="bg-emerald-600 text-white py-2 rounded-xl font-bold hover:bg-emerald-700 transition-all text-[10px]">บันทึก</button>
+            </div>
+          </div>
         </div>
       </div>
+
       <div id="report-view" class="bg-white p-4 md:p-8 rounded-3xl shadow-xl overflow-x-auto border border-slate-100 min-h-[400px]">
         <div class="text-center mb-6">
-          <h2 class="text-md font-bold text-slate-900 uppercase">บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน</h2>
-          <p id="sub-header" class="text-[11px] text-slate-600 font-bold"></p>
+          <h2 class="text-md font-bold text-slate-900 uppercase tracking-tight">บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน</h2>
+          <p id="sub-header" class="text-[11px] text-slate-600 font-bold mt-1"></p>
         </div>
         <table id="mainTable" class="table-official w-full text-[9px] bg-white border-collapse">
           <thead id="dutyHead"></thead>
           <tbody id="dutyBody"></tbody>
         </table>
-        <div class="no-print mt-6 text-center">
-            <button onclick="exportExcel()" class="bg-slate-700 text-white px-6 py-2 rounded-xl font-bold text-sm tracking-widest uppercase shadow-md">Export to Excel</button>
+        <div class="no-print mt-8 text-center">
+            <button onclick="exportExcel()" class="bg-slate-800 text-white px-8 py-3 rounded-2xl font-bold text-sm tracking-widest uppercase shadow-lg hover:bg-slate-900 transition-all flex items-center gap-2 mx-auto">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Export to Excel
+            </button>
         </div>
       </div>
     </div>
@@ -141,13 +180,13 @@
     <!-- หน้าจัดการรายชื่อ -->
     <div id="tab-settings" class="tab-content">
        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
-          <h3 class="font-bold text-lg mb-6">👥 จัดการรายชื่อพนักงาน</h3>
+          <h3 class="font-bold text-lg mb-6 flex items-center gap-2 text-slate-700">👥 จัดการรายชื่อพนักงาน</h3>
           <div class="flex gap-2 mb-6">
-            <input id="inName" placeholder="ชื่อ-นามสกุล" class="border p-3 rounded-xl flex-1 outline-none">
-            <input id="inPos" placeholder="ตำแหน่ง" class="border p-3 rounded-xl w-40 outline-none">
-            <button onclick="addStaff()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button>
+            <input id="inName" placeholder="ชื่อ-นามสกุล" class="border p-3 rounded-xl flex-1 outline-none focus:ring-2 focus:ring-blue-400">
+            <input id="inPos" placeholder="ตำแหน่ง" class="border p-3 rounded-xl w-40 outline-none focus:ring-2 focus:ring-blue-400">
+            <button onclick="addStaff()" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 transition">+</button>
           </div>
-          <div id="staffList" class="divide-y divide-slate-100 max-h-[450px] overflow-y-auto"></div>
+          <div id="staffList" class="divide-y divide-slate-100 max-h-[450px] overflow-y-auto pr-2"></div>
        </div>
     </div>
   </div>
@@ -210,7 +249,7 @@
       list.innerHTML = "";
       appData.staff.forEach(s => {
         select.innerHTML += `<option value="${s[0]}">${s[0]}</option>`;
-        list.innerHTML += `<div class="flex justify-between items-center p-3 border-b"><div><p class="font-bold text-sm text-slate-700">${s[0]}</p><p class="text-[9px] uppercase text-slate-400">${s[1] || ""}</p></div><button onclick="delStaff('${s[0]}')" class="text-rose-400 p-2 font-bold hover:text-rose-600 transition">ลบ</button></div>`;
+        list.innerHTML += `<div class="flex justify-between items-center p-4 hover:bg-slate-50 transition-colors rounded-xl"><div><p class="font-bold text-sm text-slate-700">${s[0]}</p><p class="text-[9px] uppercase text-slate-400 font-bold">${s[1] || ""}</p></div><button onclick="delStaff('${s[0]}')" class="text-rose-400 p-2 font-bold hover:text-rose-600 transition">ลบ</button></div>`;
       });
     }
 
@@ -250,7 +289,8 @@
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#f97316',
-        confirmButtonText: 'ล้างข้อมูล'
+        confirmButtonText: 'ล้างข้อมูล',
+        cancelButtonText: 'ยกเลิก'
       }).then((result) => {
         if (result.isConfirmed) {
           currentSchedule.forEach(day => {
@@ -309,7 +349,7 @@
 
       let dailyTotals = Array.from({length: days}, () => ({'ด':0, 'ช':0, 'บ':0}));
       appData.staff.forEach((s, idx) => {
-        let row = `<tr><td>${idx+1}</td><td class="text-left font-bold px-1 truncate">${s[0]}</td><td class="text-[8px] uppercase text-slate-400">${s[1] || ""}</td>`;
+        let row = `<tr><td>${idx+1}</td><td class="text-left font-bold px-1 truncate">${s[0]}</td><td class="text-[8px] uppercase text-slate-400 font-bold">${s[1] || ""}</td>`;
         let c = { n:0, m:0, a:0, supp:0, off:0 };
         for(let d=1; d<=days; d++) {
           const userDuty = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === s[0].trim());
@@ -326,7 +366,7 @@
           row += `</select></td>`;
         }
         let total = c.n + c.m + c.a + c.supp;
-        row += `<td>${c.n}</td><td>${c.m}</td><td>${c.a}</td><td>${c.supp}</td><td class="bg-blue-50 font-bold">${total}</td><td>${c.off}</td><td class="font-bold">${currentWorkDays ? total - currentWorkDays : 0}</td></tr>`;
+        row += `<td>${c.n}</td><td>${c.m}</td><td>${c.a}</td><td>${c.supp}</td><td class="bg-blue-50 font-bold text-blue-800">${total}</td><td class="bg-slate-50 text-slate-400 font-bold">${c.off}</td><td class="font-bold text-indigo-600">${currentWorkDays ? total - currentWorkDays : 0}</td></tr>`;
         body.innerHTML += row;
       });
     }
@@ -336,7 +376,11 @@
       let existing = currentSchedule[dIdx].assignments.find(a => a.name === name);
       if (existing) {
         if (el.value === "") currentSchedule[dIdx].assignments = currentSchedule[dIdx].assignments.filter(a => a.name !== name);
-        else existing.type = el.value;
+        else {
+          existing.type = el.value;
+          existing.isSupp = el.value.includes('*');
+          existing.isBooked = false; // ถ้าแก้เอง ถือว่าเป็นเวรจัด
+        }
       } else if (el.value !== "") {
         currentSchedule[dIdx].assignments.push({ name, type: el.value, isSupp: el.value.includes('*'), isBooked: false });
       }
@@ -349,7 +393,7 @@
       const m = parseInt(document.getElementById('bookMonth').value), y = parseInt(document.getElementById('bookYear').value);
       const grid = document.getElementById('calendarGrid'); grid.innerHTML = '';
       const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
-      dNames.forEach(d => grid.innerHTML += `<div class="bg-white p-3 text-center text-xs font-bold text-slate-500">${d}</div>`);
+      dNames.forEach(d => grid.innerHTML += `<div class="bg-white p-3 text-center text-xs font-bold text-slate-500 border-b border-slate-100">${d}</div>`);
       for(let i=0; i<first; i++) grid.innerHTML += `<div class="calendar-day bg-slate-50 opacity-40"></div>`;
       for(let d=1; d<=days; d++) {
         const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -364,7 +408,7 @@
       const myBk = bks.find(b => b.name.trim() === currentStaff.trim());
       let html = `<div class="text-left overflow-x-auto mb-4"><table class="w-full text-xs border-collapse border border-slate-200"><thead><tr class="bg-slate-100"><th class="border p-2 text-left">ชื่อ-นามสกุล</th><th class="border p-2 text-center">ประเภทเวร</th></tr></thead><tbody>`;
       if (bks.length === 0) html += `<tr><td colspan="2" class="border p-4 text-center italic text-slate-400">ยังไม่มีการจองในวันนี้</td></tr>`;
-      else bks.forEach(b => { html += `<tr class="${b.name === currentStaff ? 'bg-blue-50 font-bold' : ''}"><td class="border p-2">${b.name}</td><td class="border p-2 text-center"><span class="tag-booking type-${b.type} px-2 py-0.5 inline-block">${b.type}</span></td></tr>`; });
+      else bks.forEach(b => { html += `<tr class="${b.name === currentStaff ? 'bg-blue-50 font-bold text-blue-700' : ''}"><td class="border p-2">${b.name}</td><td class="border p-2 text-center"><span class="tag-booking type-${b.type} px-2 py-0.5 inline-block">${b.type}</span></td></tr>`; });
       html += `</tbody></table></div>`;
       
       const res = await Swal.fire({ 
@@ -386,9 +430,17 @@
 
     async function submitBook(date, existing = "") {
       if(!currentStaff) return Swal.fire('โปรดเลือกพนักงานก่อน', '', 'warning');
-      const { value: type } = await Swal.fire({ title: 'จองเวร ' + date, input: 'select', inputOptions: { 'ด':'ดึก','ช':'เช้า','บ':'บ่าย','ดบ':'ดบ','ชบ':'ชบ','Off':'Off','VAC':'VAC','อบรม':'อบรม' }, inputValue: existing, showCancelButton: true });
+      const { value: type } = await Swal.fire({ 
+        title: 'จองเวร ' + date, 
+        input: 'select', 
+        inputOptions: { 'ด':'ดึก','ช':'เช้า','บ':'บ่าย','ดบ':'ดบ','ชบ':'ชบ','Off':'Off','VAC':'VAC','อบรม':'อบรม' }, 
+        inputValue: existing, 
+        showCancelButton: true,
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#2563eb'
+      });
       if(type) { 
-        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading(), showConfirmButton: false });
         if(existing) await callAPI('deleteBooking', 'POST', { date, name: currentStaff }); 
         await callAPI('saveBooking', 'POST', { data: {date, name:currentStaff, type} }); 
         refresh(); 
@@ -397,7 +449,7 @@
     }
 
     async function delBook(date) { 
-      Swal.fire({ title: 'กำลังลบ...', didOpen: () => Swal.showLoading() });
+      Swal.fire({ title: 'กำลังลบ...', didOpen: () => Swal.showLoading(), showConfirmButton: false });
       await callAPI('deleteBooking', 'POST', { date, name: currentStaff }); 
       refresh();
       Swal.fire({ title: 'ลบสำเร็จ', icon: 'success', timer: 800, showConfirmButton: false });
@@ -408,7 +460,7 @@
        const container = document.getElementById('holidayCheck'); container.innerHTML = "";
        for(let d=1; d<=new Date(y, m+1, 0).getDate(); d++) {
          if(new Date(y, m, d).getDay() !== 0 && new Date(y, m, d).getDay() !== 6) 
-           container.innerHTML += `<label class="bg-white p-1 rounded border text-[9px] cursor-pointer hover:bg-blue-50 transition"><input type="checkbox" onchange="renderTable()" value="${d.toString().padStart(2,'0')}" class="extra-h mr-1">${d}</label>`;
+           container.innerHTML += `<label class="bg-white p-1 rounded border text-[9px] cursor-pointer hover:bg-blue-50 transition border-slate-200"><input type="checkbox" onchange="renderTable()" value="${d.toString().padStart(2,'0')}" class="extra-h mr-1">${d}</label>`;
        }
     }
 
@@ -418,8 +470,18 @@
        XLSX.writeFile(XLSX.utils.table_to_book(table), `Schedule_${Date.now()}.xlsx`);
     }
 
-    async function addStaff() { await callAPI('manageStaff', 'POST', { subAction: 'add', data: {name: document.getElementById('inName').value, pos: document.getElementById('inPos').value} }); refresh(); }
-    async function delStaff(n) { await callAPI('manageStaff', 'POST', { subAction: 'delete', data: {name: n} }); refresh(); }
+    async function addStaff() { 
+      if (!document.getElementById('inName').value) return;
+      await callAPI('manageStaff', 'POST', { subAction: 'add', data: {name: document.getElementById('inName').value, pos: document.getElementById('inPos').value} }); 
+      document.getElementById('inName').value = ""; 
+      document.getElementById('inPos').value = ""; 
+      refresh(); 
+    }
+    
+    async function delStaff(n) { 
+      const res = await callAPI('manageStaff', 'POST', { subAction: 'delete', data: {name: n} }); 
+      if (res) refresh(); 
+    }
   </script>
 </body>
 </html>
