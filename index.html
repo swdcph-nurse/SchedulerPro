@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sawang Daen Din Scheduler Pro</title>
   
-  <!-- Icon บน Tab bar -->
+  <!-- Icon บน Tab bar (Favicon) -->
   <link rel="icon" type="image/png" href="https://e1.pngegg.com/pngimages/759/630/png-clipart-calendrier-date-du-calendrier-symbole-bleu-texte-ligne-zone-rectangle.png">
   
   <script src="https://cdn.tailwindcss.com"></script>
@@ -31,7 +31,6 @@
     
     .bg-holiday { background-color: #cbd5e1 !important; color: #000; font-weight: bold; } 
     .cell-booked { background-color: #e0f2fe !important; border: 2.5px solid #0ea5e9 !important; }
-    .text-mismatch { color: #ef4444; font-weight: bold; font-size: 11px; }
     
     .select-shift { 
       width: 100%; border: none; background: transparent; text-align: center; cursor: pointer; 
@@ -43,27 +42,18 @@
   </style>
 </head>
 <body class="p-4 md:p-8">
-  <!-- ส่วนหัวเพจ -->
+  <!-- ส่วนหัวเพจ (Header) -->
   <nav class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-5 rounded-2xl shadow-sm mb-6 border border-slate-200 no-print gap-4">
     <div class="flex items-center gap-3">
       <div class="bg-blue-50 p-2 rounded-xl border border-blue-100">
-        <img src="https://img5.pic.in.th/file/secure-sv1/hospital-icon.png" 
-             alt="Logo" 
-             class="w-10 h-10 object-contain shadow-sm"
-             onerror="this.src='https://cdn-icons-png.flaticon.com/512/3063/3063176.png'">
+        <img src="https://img5.pic.in.th/file/secure-sv1/hospital-icon.png" class="w-10 h-10 object-contain shadow-sm" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3063/3063176.png'">
       </div>
-      
       <div class="flex flex-col gap-0.5">
-        <div class="font-bold text-xl text-slate-800 tracking-tight leading-tight">
-          Sawang Daen Din Scheduler <span class="text-blue-600 font-light text-base">Pro</span>
-        </div>
+        <div class="font-bold text-xl text-slate-800 leading-tight">Sawang Daen Din Scheduler <span class="text-blue-600 font-light text-base">Pro</span></div>
         <div class="text-sm font-bold text-slate-500">ระบบจัดเวรพนักงานช่วยเหลือคนไข้</div>
-        <div class="text-[11px] mt-1 inline-flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 w-fit">
-          <span class="opacity-70">หน่วยงาน:</span> พิเศษปาริฉัตร-สงฆ์อาพาธ
-        </div>
+        <div class="text-[11px] mt-1 font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg w-fit">หน่วยงาน: พิเศษปาริฉัตร-สงฆ์อาพาธ</div>
       </div>
     </div>
-    
     <div class="flex gap-2 bg-slate-100 p-1 rounded-xl self-end md:self-auto">
       <button onclick="switchTab('booking')" class="tab-btn px-4 py-2 rounded-lg font-semibold transition text-slate-600">เลือกจองเวร</button>
       <button onclick="switchTab('schedule')" class="tab-btn px-4 py-2 rounded-lg font-semibold transition text-slate-600">จัดตารางเวร</button>
@@ -77,7 +67,7 @@
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6 no-print">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div>
-            <label class="font-bold text-slate-400 mb-1 block uppercase text-[10px]">ระบุตัวตนพนักงาน (เพื่อจองเวร)</label>
+            <label class="font-bold text-slate-400 mb-1 block uppercase text-[10px]">ระบุตัวตนพนักงาน (เพื่อระบุตัวตน)</label>
             <select id="staffSelect" onchange="updateCurrentStaff()" class="w-full border-2 border-slate-100 p-2 rounded-xl outline-none focus:border-blue-500 font-bold text-blue-700"></select>
           </div>
           <div class="md:col-span-2 flex gap-2">
@@ -105,7 +95,7 @@
       <div class="bg-white p-6 rounded-3xl shadow-sm mb-6 border border-slate-200 no-print text-[11px]">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
           <div class="md:col-span-2">
-            <label class="font-bold text-slate-400 mb-1 block uppercase text-[10px]">เดือน / ปี พ.ศ.</label>
+            <label class="font-bold text-slate-400 mb-1 block text-[10px]">เดือน / ปี พ.ศ.</label>
             <div class="flex gap-1">
               <select id="runMonth" onchange="handleMonthYearChange()" class="border p-1.5 rounded-lg w-full text-xs"></select>
               <select id="runYear" onchange="handleMonthYearChange()" class="border p-1.5 rounded-lg text-xs">
@@ -114,46 +104,28 @@
               </select>
             </div>
           </div>
-          <div class="md:col-span-3 text-center">
-             <label class="font-bold text-slate-400 mb-1 block uppercase text-[10px]">จ-ศ (จริง/เสริม)</label>
-             <div class="grid grid-cols-3 gap-1">
-               <input id="q_wd_r_n" type="number" value="1" class="border p-1 text-center rounded-lg">
-               <input id="q_wd_r_m" type="number" value="2" class="border p-1 text-center rounded-lg">
-               <input id="q_wd_r_a" type="number" value="2" class="border p-1 text-center rounded-lg">
-               <input id="q_wd_s_n" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50" placeholder="ด*">
-               <input id="q_wd_s_m" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50" placeholder="ช*">
-               <input id="q_wd_s_a" type="number" value="1" class="border p-1 text-center rounded-lg bg-amber-50" placeholder="บ*">
+          <div class="md:col-span-4 text-center">
+             <label class="font-bold text-slate-400 mb-1 block text-[10px]">อัตรากำลัง (จริง / เสริม)</label>
+             <div class="grid grid-cols-6 gap-1">
+               <input id="q_wd_r_n" type="number" value="1" class="border p-1 text-center rounded-lg" title="จริง-ดึก">
+               <input id="q_wd_r_m" type="number" value="2" class="border p-1 text-center rounded-lg" title="จริง-เช้า">
+               <input id="q_wd_r_a" type="number" value="2" class="border p-1 text-center rounded-lg" title="จริง-บ่าย">
+               <input id="q_wd_s_n" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50" title="เสริม-ดึก">
+               <input id="q_wd_s_m" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50" title="เสริม-เช้า">
+               <input id="q_wd_s_a" type="number" value="1" class="border p-1 text-center rounded-lg bg-amber-50" title="เสริม-บ่าย">
              </div>
           </div>
-          <div class="md:col-span-3 text-center">
-             <label class="font-bold text-rose-400 mb-1 block uppercase text-[10px]">ส-อา (จริง/เสริม)</label>
-             <div class="grid grid-cols-3 gap-1">
-               <input id="q_hd_r_n" type="number" value="1" class="border p-1 text-center rounded-lg">
-               <input id="q_hd_r_m" type="number" value="1" class="border p-1 text-center rounded-lg">
-               <input id="q_hd_r_a" type="number" value="1" class="border p-1 text-center rounded-lg">
-               <input id="q_hd_s_n" type="number" value="0" class="border p-1 text-center rounded-lg bg-amber-50" placeholder="ด*">
-               <input id="q_hd_s_m" type="number" value="1" class="border p-1 text-center rounded-lg bg-amber-50" placeholder="ช*">
-               <input id="q_hd_s_a" type="number" value="1" class="border p-1 text-center rounded-lg bg-amber-50" placeholder="บ*">
-             </div>
+          <div class="md:col-span-4 flex gap-1">
+            <button onclick="processAuto()" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 shadow-md text-xs">จัดเวรอัตโนมัติ</button>
+            <button onclick="clearScheduleUI()" class="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-orange-600 shadow-md text-xs">ล้างข้อมูล</button>
+            <button onclick="saveSchedule()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-emerald-700 shadow-md text-xs">บันทึก</button>
           </div>
-          <div class="md:col-span-2 text-center">
-             <label class="font-bold text-slate-400 mb-1 block uppercase text-[10px]">วันหยุดพิเศษ</label>
-             <div id="holidayCheck" class="flex flex-wrap gap-1 text-[9px] h-[58px] overflow-y-auto border p-1 rounded-lg bg-slate-50"></div>
-          </div>
-          <div class="md:col-span-2 flex flex-col gap-1">
-            <button onclick="processAuto()" class="bg-indigo-600 text-white py-1.5 rounded-xl font-bold hover:bg-indigo-700 shadow-lg text-[10px]">จัดเวรอัตโนมัติ</button>
-            <button onclick="saveSchedule()" class="bg-emerald-600 text-white py-1.5 rounded-xl font-bold hover:bg-emerald-700 shadow-lg text-[10px]">บันทึกการแก้ไข</button>
-          </div>
+          <div id="holidayCheck" class="md:col-span-2 flex flex-wrap gap-1 h-[40px] overflow-y-auto border p-1 rounded-lg bg-slate-50"></div>
         </div>
       </div>
-
       <div id="report-view" class="bg-white p-4 md:p-8 rounded-3xl shadow-xl overflow-x-auto border border-slate-100 min-h-[400px]">
         <div class="text-center mb-6">
           <h2 class="text-md font-bold text-slate-900 uppercase">บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน</h2>
-          <div class="text-[11px] font-bold text-slate-800 leading-relaxed mb-1">
-            สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ<br>
-            กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม กลุ่มการพยาบาล
-          </div>
           <p id="sub-header" class="text-[11px] text-slate-600 font-bold"></p>
         </div>
         <table id="mainTable" class="table-official w-full text-[9px] bg-white border-collapse">
@@ -169,11 +141,11 @@
     <!-- หน้าจัดการรายชื่อ -->
     <div id="tab-settings" class="tab-content">
        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
-          <h3 class="font-bold text-lg mb-6 flex items-center gap-2 text-slate-700">👥 จัดการรายชื่อพนักงาน</h3>
+          <h3 class="font-bold text-lg mb-6">👥 จัดการรายชื่อพนักงาน</h3>
           <div class="flex gap-2 mb-6">
             <input id="inName" placeholder="ชื่อ-นามสกุล" class="border p-3 rounded-xl flex-1 outline-none">
             <input id="inPos" placeholder="ตำแหน่ง" class="border p-3 rounded-xl w-40 outline-none">
-            <button onclick="addStaff()" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 transition">+</button>
+            <button onclick="addStaff()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">+</button>
           </div>
           <div id="staffList" class="divide-y divide-slate-100 max-h-[450px] overflow-y-auto"></div>
        </div>
@@ -186,17 +158,12 @@
     async function callAPI(action, method = 'GET', data = {}) {
       try {
         let url = WEB_APP_URL;
-        let options = {
-          method: 'POST',
-          body: JSON.stringify({ action, ...data })
-        };
-
+        let options = { method: 'POST', body: JSON.stringify({ action, ...data }) };
         if (method === 'GET') {
           url += `?action=${action}`;
           for (let key in data) url += `&${key}=${encodeURIComponent(data[key])}`;
           options = { method: 'GET' };
         }
-
         const response = await fetch(url, options);
         return await response.json();
       } catch (err) {
@@ -214,8 +181,7 @@
     const dNames = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
     window.onload = () => {
-      const selects = ['bookMonth', 'runMonth'];
-      selects.forEach(id => {
+      ['bookMonth', 'runMonth'].forEach(id => {
         const el = document.getElementById(id);
         mNames.forEach((m, i) => { el.innerHTML += `<option value="${i}">${m}</option>`; });
       });
@@ -224,11 +190,7 @@
 
     async function refresh() { 
       const data = await callAPI('getAppData', 'GET');
-      if (data) {
-        appData = data; 
-        updateUI(); 
-        renderCalendar(); 
-      }
+      if (data) { appData = data; updateUI(); renderCalendar(); }
     }
 
     function switchTab(id) {
@@ -238,46 +200,38 @@
       const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.innerText.includes(id === 'booking' ? 'เลือกจอง' : id === 'schedule' ? 'จัดตาราง' : 'ตั้งค่า'));
       if(activeBtn) activeBtn.className = "tab-btn px-4 py-2 rounded-lg font-semibold transition bg-white text-blue-600 shadow-sm";
       if(id === 'schedule') { buildHolidayChecks(); handleMonthYearChange(); }
-      if(id === 'booking') { renderCalendar(); }
+      if(id === 'booking') renderCalendar();
     }
 
     function updateUI() {
       const select = document.getElementById('staffSelect');
       const list = document.getElementById('staffList');
-      if (!select || !list) return;
       select.innerHTML = '<option value="">-- เลือกพนักงาน (เพื่อระบุตัวตน) --</option>';
       list.innerHTML = "";
       appData.staff.forEach(s => {
-        select.innerHTML += `<option value="${s[0]}" ${s[0] === currentStaff ? 'selected' : ''}>${s[0]}</option>`;
+        select.innerHTML += `<option value="${s[0]}">${s[0]}</option>`;
         list.innerHTML += `<div class="flex justify-between items-center p-3 border-b"><div><p class="font-bold text-sm text-slate-700">${s[0]}</p><p class="text-[9px] uppercase text-slate-400">${s[1] || ""}</p></div><button onclick="delStaff('${s[0]}')" class="text-rose-400 p-2 font-bold hover:text-rose-600 transition">ลบ</button></div>`;
       });
     }
 
     async function handleMonthYearChange() {
-      const m = document.getElementById('runMonth').value;
-      const y = document.getElementById('runYear').value;
+      const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value;
       document.getElementById('sub-header').innerText = `ประจำเดือน ${mNames[m]} พ.ศ. ${parseInt(y)+543}`;
-      
-      document.getElementById('dutyHead').innerHTML = "";
-      document.getElementById('dutyBody').innerHTML = "";
-
       const savedData = await callAPI('loadSchedule', 'GET', { month: m, year: y });
       if (savedData) {
         currentSchedule = savedData.schedule;
-        currentWorkDays = savedData.workDays;
         currentTargets = savedData.targets;
+        currentWorkDays = savedData.workDays;
       } else {
         currentSchedule = constructInitialDraft(m, y);
-        currentWorkDays = 0;
-        currentTargets = [];
       }
       renderTable();
     }
 
     function constructInitialDraft(m, y) {
-      const daysInMonth = new Date(y, parseInt(m) + 1, 0).getDate();
+      const days = new Date(y, parseInt(m) + 1, 0).getDate();
       let skeleton = [];
-      for (let d = 1; d <= daysInMonth; d++) {
+      for (let d = 1; d <= days; d++) {
         const dStr = `${y}-${String(parseInt(m) + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         let dayAssigns = [];
         appData.staff.forEach(s => {
@@ -289,9 +243,27 @@
       return skeleton;
     }
 
+    function clearScheduleUI() {
+      Swal.fire({
+        title: 'ยืนยันการล้างตาราง?',
+        text: "ระบบจะลบเวรที่ AI จัดให้ทั้งหมด แต่จะยังคงเวรที่จองไว้ในหน้าปฏิทิน",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f97316',
+        confirmButtonText: 'ล้างข้อมูล'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          currentSchedule.forEach(day => {
+            day.assignments = day.assignments.filter(a => a.isBooked);
+          });
+          renderTable();
+          Swal.fire({ title: 'ล้างข้อมูลสำเร็จ', icon: 'success', timer: 800, showConfirmButton: false });
+        }
+      });
+    }
+
     async function processAuto() {
-      const m = parseInt(document.getElementById('runMonth').value);
-      const y = parseInt(document.getElementById('runYear').value);
+      const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value);
       const extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value);
       const q = {
         wd_r_n: document.getElementById('q_wd_r_n').value, wd_r_m: document.getElementById('q_wd_r_m').value, wd_r_a: document.getElementById('q_wd_r_a').value,
@@ -299,9 +271,8 @@
         hd_r_n: document.getElementById('q_hd_r_n').value, hd_r_m: document.getElementById('q_hd_r_m').value, hd_r_a: document.getElementById('q_hd_r_a').value,
         hd_s_n: document.getElementById('q_hd_s_n').value, hd_s_m: document.getElementById('q_hd_s_m').value, hd_s_a: document.getElementById('q_hd_s_a').value
       };
-      Swal.fire({ title: 'กำลังจัดตารางเวร...', didOpen: () => Swal.showLoading(), showConfirmButton: false });
-      
-      const res = await callAPI('generate', 'POST', { month: m, year: y, extraHolidays: extraH, q: q });
+      Swal.fire({ title: 'กำลังคำนวณเวรตามนาฬิกาชีวภาพ...', didOpen: () => Swal.showLoading(), showConfirmButton: false });
+      const res = await callAPI('generate', 'POST', { month: m, year: y, extraHolidays: extraH, q });
       if (res) {
         currentSchedule = res.schedule; 
         currentWorkDays = res.workDays; 
@@ -312,26 +283,18 @@
     }
 
     async function saveSchedule() {
-      if (!currentSchedule || currentSchedule.length === 0) return Swal.fire('ไม่พบข้อมูลที่จะบันทึก', '', 'warning');
-      const m = document.getElementById('runMonth').value;
-      const y = document.getElementById('runYear').value;
-      Swal.fire({ title: 'กำลังบันทึกข้อมูล...', didOpen: () => Swal.showLoading(), showConfirmButton: false });
-      
-      const res = await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays });
-      if (res) {
-        Swal.fire({ title: 'บันทึกสำเร็จ', icon: 'success', timer: 1000, showConfirmButton: false });
-      } else {
-        Swal.fire('บันทึกไม่สำเร็จ', 'โปรดตรวจสอบการเชื่อมต่อ', 'error');
-      }
+      const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value;
+      Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading(), showConfirmButton: false });
+      await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays });
+      Swal.fire({ title: 'สำเร็จ', icon: 'success', timer: 1000, showConfirmButton: false });
     }
 
     function renderTable() {
       const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value;
       const extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value);
       const days = new Date(y, parseInt(m) + 1, 0).getDate();
-      
       const head = document.getElementById('dutyHead'), body = document.getElementById('dutyBody');
-      head.innerHTML = ""; body.innerHTML = ""; 
+      head.innerHTML = ""; body.innerHTML = "";
 
       let h1 = `<tr><th rowspan="3">ลำดับ</th><th rowspan="3" class="min-w-[120px]">ชื่อ - สกุล</th><th rowspan="3" class="min-w-[80px]">ตำแหน่ง</th>`, h2 = `<tr>`;
       for(let d=1; d<=days; d++) {
@@ -339,74 +302,45 @@
         h1 += `<th class="${isH ? 'bg-holiday' : ''}">${d.toString().padStart(2,'0')}</th>`;
         h2 += `<th class="${isH ? 'bg-holiday' : ''}">${dNames[dObj.getDay()]}</th>`;
       }
-      h1 += `<th colspan="3">เวรจริง</th><th rowspan="3">เสริม</th><th rowspan="3">รวม</th><th rowspan="3">หยุด</th><th rowspan="3">OT</th></tr>`;
-      h2 += `</tr><tr>`;
-      for(let d=1; d<=days; d++) {
-        const dObj = new Date(y, m, d), isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
-        h2 += `<th class="${isH ? 'bg-holiday' : ''}"></th>`;
-      }
+      h1 += `<th colspan="3">เวรจริง</th><th rowspan="3">เสริม</th><th rowspan="3">รวม</th><th rowspan="3">หยุด</th><th rowspan="3">OT</th></tr><tr class="h-0">`;
+      for(let d=1; d<=days; d++) h2 += `<th class="${(new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0'))) ? 'bg-holiday' : ''}"></th>`;
       h2 += `<th>ด</th><th>ช</th><th>บ</th></tr>`;
       head.innerHTML = h1 + h2;
-      
-      let dailyTotals = Array.from({length: days}, () => ({'ด':0, 'ช':0, 'บ':0, รวม:0}));
+
+      let dailyTotals = Array.from({length: days}, () => ({'ด':0, 'ช':0, 'บ':0}));
       appData.staff.forEach((s, idx) => {
-        const sName = s[0].trim();
-        let row = `<tr><td>${idx+1}</td><td class="text-left font-bold px-1 truncate">${sName}</td><td class="text-[8px] uppercase text-slate-400">${s[1] || ""}</td>`;
-        let c = { n:0, m:0, a:0, supp:0, total:0, off:0 };
+        let row = `<tr><td>${idx+1}</td><td class="text-left font-bold px-1 truncate">${s[0]}</td><td class="text-[8px] uppercase text-slate-400">${s[1] || ""}</td>`;
+        let c = { n:0, m:0, a:0, supp:0, off:0 };
         for(let d=1; d<=days; d++) {
-          const userDuty = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === sName);
+          const userDuty = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === s[0].trim());
+          let selVal = userDuty ? userDuty.type : "";
+          if(selVal && !['Off','VAC','อบรม'].includes(selVal)) {
+            if(selVal.includes('ด')) { c.n++; dailyTotals[d-1]['ด']++; }
+            if(selVal.includes('ช')) { c.m++; dailyTotals[d-1]['ช']++; }
+            if(selVal.includes('บ')) { c.a++; dailyTotals[d-1]['บ']++; }
+            if(selVal.includes('*')) c.supp++;
+          } else { c.off++; }
           const isH = (new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
-          let cellClass = isH ? "bg-holiday" : "", selectedVal = "";
-          
-          if(!userDuty || ['Off','VAC','อบรม'].includes(userDuty.type)) {
-            c.off++; if(userDuty) selectedVal = userDuty.type;
-          } else {
-            if(userDuty.isBooked) cellClass += " cell-booked";
-            selectedVal = userDuty.type;
-            let p = parseShiftStats(userDuty.type);
-            c.n += p.n; c.m += p.m; c.a += p.a; c.supp += p.supp;
-            if(userDuty.type.includes('ด')) dailyTotals[d-1]['ด']++;
-            if(userDuty.type.includes('ช')) dailyTotals[d-1]['ช']++;
-            if(userDuty.type.includes('บ')) dailyTotals[d-1]['บ']++;
-          }
-          const opts = ["", "ด", "ด*", "ช", "ช*", "บ", "บ*", "ดบ", "ชบ", "ช*บ", "ชบ*", "ช*บ*", "ด*บ", "ดบ*", "ด*บ*", "Off", "VAC", "อบรม"];
-          let sel = `<select class="select-shift" onchange="handleShiftChange('${sName}', ${d-1}, this)">`;
-          opts.forEach(o => { sel += `<option value="${o}" ${selectedVal === o ? 'selected' : ''}>${o}</option>`; });
-          sel += `</select>`;
-          row += `<td class="${cellClass}">${sel}</td>`;
+          row += `<td class="${isH ? 'bg-holiday' : ''} ${userDuty?.isBooked ? 'cell-booked' : ''}"><select class="select-shift" onchange="handleShiftChange('${s[0]}', ${d-1}, this)">`;
+          ["", "ด", "ด*", "ช", "ช*", "บ", "บ*", "ดบ", "ชบ", "Off", "VAC", "อบรม"].forEach(o => { row += `<option value="${o}" ${selVal === o ? 'selected' : ''}>${o}</option>`; });
+          row += `</select></td>`;
         }
-        c.total = c.n + c.m + c.a + c.supp;
-        let ot = currentWorkDays > 0 ? c.total - currentWorkDays : 0;
-        row += `<td>${c.n}</td><td>${c.m}</td><td>${c.a}</td><td>${c.supp}</td><td class="bg-blue-50 font-bold text-blue-900">${c.total}</td><td class="bg-rose-50 font-bold text-rose-600">${c.off}</td><td class="${ot < 0 ? 'text-rose-400' : 'text-blue-600'} font-bold">${ot}</td></tr>`;
+        let total = c.n + c.m + c.a + c.supp;
+        row += `<td>${c.n}</td><td>${c.m}</td><td>${c.a}</td><td>${c.supp}</td><td class="bg-blue-50 font-bold">${total}</td><td>${c.off}</td><td class="font-bold">${currentWorkDays ? total - currentWorkDays : 0}</td></tr>`;
         body.innerHTML += row;
       });
-
-      ['ด','ช','บ','รวม'].forEach(type => {
-        let fRow = `<tr class="bg-slate-100 font-bold"><td colspan="3" class="text-right px-2 italic text-blue-800 text-[9px]">รวมเวร ${type}</td>`;
-        for(let d=0; d<days; d++) {
-          if(type === 'รวม') dailyTotals[d].รวม = dailyTotals[d]['ด'] + dailyTotals[d]['ช'] + dailyTotals[d]['บ'];
-          const val = dailyTotals[d][type], tVal = (currentTargets && currentTargets[d]) ? currentTargets[d][type] : 0;
-          fRow += `<td class="${(type !== 'รวม' && tVal > 0 && val !== tVal) ? 'text-mismatch' : ''}">${val}</td>`;
-        }
-        fRow += `<td colspan="7"></td></tr>`; body.innerHTML += fRow;
-      });
     }
 
-    function handleShiftChange(staffName, dayIdx, selectEl) {
-      const val = selectEl.value;
-      if (!currentSchedule[dayIdx]) currentSchedule[dayIdx] = { date: "", assignments: [] };
-      currentSchedule[dayIdx].assignments = currentSchedule[dayIdx].assignments.filter(a => a.name !== staffName);
-      if (val !== "") currentSchedule[dayIdx].assignments.push({ name: staffName, type: val, isSupp: val.includes('*'), isBooked: false });
+    function handleShiftChange(name, dIdx, el) {
+      if (!currentSchedule[dIdx]) currentSchedule[dIdx] = { assignments: [] };
+      let existing = currentSchedule[dIdx].assignments.find(a => a.name === name);
+      if (existing) {
+        if (el.value === "") currentSchedule[dIdx].assignments = currentSchedule[dIdx].assignments.filter(a => a.name !== name);
+        else existing.type = el.value;
+      } else if (el.value !== "") {
+        currentSchedule[dIdx].assignments.push({ name, type: el.value, isSupp: el.value.includes('*'), isBooked: false });
+      }
       renderTable();
-    }
-
-    function parseShiftStats(type) {
-      let stats = { n:0, m:0, a:0, supp:0 };
-      if (['Off','VAC','อบรม'].includes(type)) return stats;
-      if (type.includes('ด*')) stats.supp++; else if (type.includes('ด')) stats.n++;
-      if (type.includes('ช*')) stats.supp++; else if (type.includes('ช')) stats.m++;
-      if (type.includes('บ*')) stats.supp++; else if (type.includes('บ')) stats.a++;
-      return stats;
     }
 
     function updateCurrentStaff() { currentStaff = document.getElementById('staffSelect').value; renderCalendar(); }
@@ -415,17 +349,12 @@
       const m = parseInt(document.getElementById('bookMonth').value), y = parseInt(document.getElementById('bookYear').value);
       const grid = document.getElementById('calendarGrid'); grid.innerHTML = '';
       const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
-      dNames.forEach(d => grid.innerHTML += `<div class="bg-white p-3 text-center text-xs font-bold border-b border-slate-100 text-slate-500">${d}</div>`);
+      dNames.forEach(d => grid.innerHTML += `<div class="bg-white p-3 text-center text-xs font-bold text-slate-500">${d}</div>`);
       for(let i=0; i<first; i++) grid.innerHTML += `<div class="calendar-day bg-slate-50 opacity-40"></div>`;
       for(let d=1; d<=days; d++) {
         const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const bks = appData.bookings.filter(b => b.date === dStr);
-        let bkHtml = bks.map(b => {
-          const isMine = b.name.trim() === currentStaff.trim();
-          return `<div class="tag-booking type-${b.type} ${isMine ? 'ring-2 ring-white scale-110 shadow-lg z-10' : 'opacity-80'} flex justify-between items-center transition-all">
-            <span class="truncate">${b.name} (${b.type})</span>
-          </div>`;
-        }).join('');
+        let bkHtml = bks.map(b => `<div class="tag-booking type-${b.type} ${b.name === currentStaff ? 'ring-2 ring-white scale-110 shadow-md' : 'opacity-80'}">${b.name} (${b.type})</div>`).join('');
         grid.innerHTML += `<div class="calendar-day p-2" onclick="showDayDetails('${dStr}')"><span class="text-xs font-bold text-slate-300">${d}</span><div class="mt-1">${bkHtml}</div></div>`;
       }
     }
@@ -433,172 +362,64 @@
     async function showDayDetails(date) {
       const bks = appData.bookings.filter(b => b.date === date);
       const myBk = bks.find(b => b.name.trim() === currentStaff.trim());
-      
-      let html = `<div class="text-left overflow-x-auto">
-        <table class="w-full text-xs border-collapse border border-slate-200">
-          <thead>
-            <tr class="bg-slate-100">
-              <th class="border p-2 text-left">ชื่อ-นามสกุล</th>
-              <th class="border p-2 text-center">ประเภทเวร</th>
-            </tr>
-          </thead>
-          <tbody>`;
-      
-      if (bks.length === 0) {
-        html += `<tr><td colspan="2" class="border p-4 text-center text-slate-400">ยังไม่มีการจองในวันนี้</td></tr>`;
-      } else {
-        bks.forEach(b => {
-          html += `<tr class="${b.name.trim() === currentStaff.trim() ? 'bg-blue-50 font-bold' : ''}">
-            <td class="border p-2">${b.name}</td>
-            <td class="border p-2 text-center">
-              <span class="tag-booking type-${b.type} px-2 py-0.5 inline-block">${b.type}</span>
-            </td>
-          </tr>`;
-        });
-      }
-      
+      let html = `<div class="text-left overflow-x-auto mb-4"><table class="w-full text-xs border-collapse border border-slate-200"><thead><tr class="bg-slate-100"><th class="border p-2 text-left">ชื่อ-นามสกุล</th><th class="border p-2 text-center">ประเภทเวร</th></tr></thead><tbody>`;
+      if (bks.length === 0) html += `<tr><td colspan="2" class="border p-4 text-center italic text-slate-400">ยังไม่มีการจองในวันนี้</td></tr>`;
+      else bks.forEach(b => { html += `<tr class="${b.name === currentStaff ? 'bg-blue-50 font-bold' : ''}"><td class="border p-2">${b.name}</td><td class="border p-2 text-center"><span class="tag-booking type-${b.type} px-2 py-0.5 inline-block">${b.type}</span></td></tr>`; });
       html += `</tbody></table></div>`;
-
-      const { value: action } = await Swal.fire({
-        title: `รายละเอียดการจองวันที่ ${date}`,
-        html: html,
-        showCancelButton: true,
-        cancelButtonText: 'ปิด',
-        confirmButtonText: myBk ? 'แก้ไขการจองของฉัน' : 'เพิ่มการจอง',
-        confirmButtonColor: myBk ? '#f59e0b' : '#3b82f6',
-        showDenyButton: myBk ? true : false,
-        denyButtonText: 'ลบการจอง',
-        denyButtonColor: '#ef4444'
-      });
-
-      if (action) {
-        // กรณีแก้ไขหรือเพิ่ม
-        submitBook(date, myBk ? myBk.type : "");
-      } else if (Swal.getIcon() === undefined && action === false && myBk && action !== undefined) {
-        // กรณีลบ (ใช้ denyButton)
-      }
-    }
-
-    // เพิ่มดักฟัง Event จาก Swal (Deny Button) สำหรับการลบ
-    const originalSubmitBook = submitBook;
-    async function submitBook(date, existingType = "") {
-      if(!currentStaff) return Swal.fire('โปรดระบุตัวตนพนักงานก่อน (ที่ช่องด้านบน)', '', 'warning');
       
-      const { value: type, isConfirmed, isDenied } = await Swal.fire({ 
-        title: existingType ? 'แก้ไขการจองวันที่ ' + date : 'จองเวรวันที่ ' + date,
-        input: 'select', 
-        inputOptions: { 'ด':'ดึก','ช':'เช้า','บ':'บ่าย','ดบ':'ดบ','ชบ':'ชบ','Off':'Off','VAC':'VAC','อบรม':'อบรม' }, 
-        inputValue: existingType,
-        confirmButtonColor: '#2563eb', 
-        showCancelButton: true,
-        cancelButtonText: 'ยกเลิก'
-      });
-
-      if (type) {
-        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
-        // ถ้าเป็นการแก้ไข ให้ลบของเก่าก่อน
-        if (existingType) {
-          await callAPI('deleteBooking', 'POST', { date, name: currentStaff });
-        }
-        // บันทึกอันใหม่
-        const res = await callAPI('saveBooking', 'POST', { data: {date, name: currentStaff, type} });
-        if (res) refresh();
-        Swal.fire({ title: 'สำเร็จ', icon: 'success', timer: 800, showConfirmButton: false });
-      }
-    }
-
-    // ฟังก์ชันลบแยกต่างหาก (เรียกจาก Modal Details)
-    async function delBook(date) { 
-      if(!currentStaff) return;
-      Swal.fire({ title: 'กำลังลบการจอง...', didOpen: () => Swal.showLoading() });
-      const res = await callAPI('deleteBooking', 'POST', { date, name: currentStaff });
-      if (res) {
-        refresh();
-        Swal.fire({ title: 'ลบสำเร็จ', icon: 'success', timer: 800, showConfirmButton: false });
-      }
-    }
-
-    // ปรับปรุง Event Listener ของ Swal สำหรับปุ่ม Deny (ลบ) ในหน้า Details
-    const showDetailsWithDelete = async (date) => {
-        // ฟังก์ชันเดิมที่เขียนใน showDayDetails แต่แยกออกมาเพื่อเรียกง่าย
-    }
-    
-    // แทนที่ showDayDetails ของเดิมด้วยเวอร์ชันที่สมบูรณ์
-    window.showDayDetails = async function(date) {
-      const bks = appData.bookings.filter(b => b.date === date);
-      const myBk = bks.find(b => b.name.trim() === currentStaff.trim());
-      
-      let html = `<div class="text-left overflow-x-auto mb-4">
-        <table class="w-full text-xs border-collapse border border-slate-200">
-          <thead>
-            <tr class="bg-slate-100">
-              <th class="border p-2 text-left">ชื่อ-นามสกุล</th>
-              <th class="border p-2 text-center">ประเภทเวร</th>
-            </tr>
-          </thead>
-          <tbody>`;
-      
-      if (bks.length === 0) {
-        html += `<tr><td colspan="2" class="border p-4 text-center text-slate-400 italic">ยังไม่มีการจองเวรในวันนี้</td></tr>`;
-      } else {
-        bks.forEach(b => {
-          html += `<tr class="${b.name.trim() === currentStaff.trim() ? 'bg-blue-50 font-bold' : ''}">
-            <td class="border p-2">${b.name}</td>
-            <td class="border p-2 text-center">
-              <span class="tag-booking type-${b.type} px-2 py-0.5 inline-block">${b.type}</span>
-            </td>
-          </tr>`;
-        });
-      }
-      html += `</tbody></table></div>`;
-
-      const result = await Swal.fire({
-        title: `ข้อมูลวันที่ ${date}`,
-        html: html,
-        showCancelButton: true,
+      const res = await Swal.fire({ 
+        title: `ข้อมูลวันที่ ${date}`, 
+        html, 
+        showCancelButton: true, 
         cancelButtonText: 'ปิด',
         showConfirmButton: currentStaff ? true : false,
         confirmButtonText: myBk ? 'แก้ไขการจองของฉัน' : 'เพิ่มการจอง',
-        confirmButtonColor: myBk ? '#f59e0b' : '#3b82f6',
-        showDenyButton: myBk ? true : false,
+        confirmButtonColor: myBk ? '#f59e0b' : '#3b82f6', 
+        showDenyButton: myBk ? true : false, 
         denyButtonText: 'ลบการจอง',
-        denyButtonColor: '#ef4444',
         footer: !currentStaff ? '<span class="text-rose-500 font-bold text-xs underline">โปรดเลือกพนักงานที่ด้านบนก่อนดำเนินการจอง</span>' : ''
       });
+      
+      if (res.isConfirmed) submitBook(date, myBk ? myBk.type : "");
+      else if (res.isDenied) delBook(date);
+    }
 
-      if (result.isConfirmed) {
-        submitBook(date, myBk ? myBk.type : "");
-      } else if (result.isDenied) {
-        delBook(date);
+    async function submitBook(date, existing = "") {
+      if(!currentStaff) return Swal.fire('โปรดเลือกพนักงานก่อน', '', 'warning');
+      const { value: type } = await Swal.fire({ title: 'จองเวร ' + date, input: 'select', inputOptions: { 'ด':'ดึก','ช':'เช้า','บ':'บ่าย','ดบ':'ดบ','ชบ':'ชบ','Off':'Off','VAC':'VAC','อบรม':'อบรม' }, inputValue: existing, showCancelButton: true });
+      if(type) { 
+        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
+        if(existing) await callAPI('deleteBooking', 'POST', { date, name: currentStaff }); 
+        await callAPI('saveBooking', 'POST', { data: {date, name:currentStaff, type} }); 
+        refresh(); 
+        Swal.fire({ title: 'บันทึกสำเร็จ', icon: 'success', timer: 800, showConfirmButton: false });
       }
+    }
+
+    async function delBook(date) { 
+      Swal.fire({ title: 'กำลังลบ...', didOpen: () => Swal.showLoading() });
+      await callAPI('deleteBooking', 'POST', { date, name: currentStaff }); 
+      refresh();
+      Swal.fire({ title: 'ลบสำเร็จ', icon: 'success', timer: 800, showConfirmButton: false });
     }
 
     function buildHolidayChecks() {
        const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value);
        const container = document.getElementById('holidayCheck'); container.innerHTML = "";
-       const days = new Date(y, m+1, 0).getDate();
-       for(let d=1; d<=days; d++) {
+       for(let d=1; d<=new Date(y, m+1, 0).getDate(); d++) {
          if(new Date(y, m, d).getDay() !== 0 && new Date(y, m, d).getDay() !== 6) 
-           container.innerHTML += `<label class="bg-white p-1 px-1.5 rounded-lg border text-[9px] cursor-pointer hover:bg-blue-50 transition"><input type="checkbox" onchange="renderTable()" value="${d.toString().padStart(2,'0')}" class="extra-h mr-1">${d}</label>`;
+           container.innerHTML += `<label class="bg-white p-1 rounded border text-[9px] cursor-pointer hover:bg-blue-50 transition"><input type="checkbox" onchange="renderTable()" value="${d.toString().padStart(2,'0')}" class="extra-h mr-1">${d}</label>`;
        }
     }
 
     function exportExcel() {
-       const table = document.getElementById("mainTable");
-       const tableClone = table.cloneNode(true);
-       tableClone.querySelectorAll('select').forEach(sel => { sel.parentNode.replaceChild(document.createTextNode(sel.value), sel); });
-       XLSX.writeFile(XLSX.utils.table_to_book(tableClone, {sheet: "DutySchedule"}), `Schedule_${new Date().getTime()}.xlsx`);
+       const table = document.getElementById("mainTable").cloneNode(true);
+       table.querySelectorAll('select').forEach(sel => { sel.parentNode.replaceChild(document.createTextNode(sel.value), sel); });
+       XLSX.writeFile(XLSX.utils.table_to_book(table), `Schedule_${Date.now()}.xlsx`);
     }
 
-    async function addStaff() { 
-      const res = await callAPI('manageStaff', 'POST', { subAction: 'add', data: {name: document.getElementById('inName').value, pos: document.getElementById('inPos').value} });
-      if (res) refresh();
-    }
-    
-    async function delStaff(n) { 
-      const res = await callAPI('manageStaff', 'POST', { subAction: 'delete', data: {name: n} });
-      if (res) refresh();
-    }
+    async function addStaff() { await callAPI('manageStaff', 'POST', { subAction: 'add', data: {name: document.getElementById('inName').value, pos: document.getElementById('inPos').value} }); refresh(); }
+    async function delStaff(n) { await callAPI('manageStaff', 'POST', { subAction: 'delete', data: {name: n} }); refresh(); }
   </script>
 </body>
 </html>
