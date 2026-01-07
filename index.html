@@ -319,78 +319,89 @@
       Swal.fire({ title: 'สำเร็จ', icon: 'success', timer: 1000 });
     }
 
-    function renderTable() {
-      const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value;
-      const extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value);
-      const daysCount = new Date(y, parseInt(m) + 1, 0).getDate();
-      const head = document.getElementById('dutyHead'), body = document.getElementById('dutyBody');
-      const watermark = document.getElementById('watermark');
+    /* ค้นหาฟังก์ชัน renderTable() ในไฟล์เดิมแล้วแทนที่ด้วยโค้ดนี้ */
+
+function renderTable() {
+  const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value;
+  const extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value);
+  const daysCount = new Date(y, parseInt(m) + 1, 0).getDate();
+  const head = document.getElementById('dutyHead'), body = document.getElementById('dutyBody');
+  const watermark = document.getElementById('watermark');
+  
+  head.innerHTML = ""; body.innerHTML = "";
+  watermark.style.display = isFinished ? 'block' : 'none';
+
+  let h1 = `<tr><th rowspan="3" style="width:40px">#</th><th rowspan="3" style="width:175px">ชื่อพนักงาน</th><th rowspan="3" style="width:95px">ตำแหน่ง</th>`, h2 = `<tr>`;
+  for(let d=1; d<=daysCount; d++) {
+    const dObj = new Date(y, m, d), isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
+    h1 += `<th class="${isH ? 'bg-holiday' : ''}" style="width:34px">${d}</th>`;
+    h2 += `<th class="${isH ? 'bg-holiday' : ''}">${dNames[dObj.getDay()]}</th>`;
+  }
+  h1 += `<th colspan="6" style="width:200px">เวรจริง</th><th rowspan="3" style="width:45px">เสริม</th><th rowspan="3" style="width:70px">Σ รวม</th><th rowspan="3" style="width:45px">หยุด</th></tr>`;
+  h2 += `</tr><tr>`;
+  for(let d=1; d<=daysCount; d++) h2 += `<th class="${(new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0'))) ? 'bg-holiday' : ''}"></th>`;
+  h2 += `<th>ด</th><th>ช</th><th>บ</th><th>V</th><th>อ</th><th class="bg-blue-50 font-black">Σ จริง</th></tr>`;
+  head.innerHTML = h1 + h2;
+
+  let dStats = Array.from({length: daysCount}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
+  
+  appData.staff.forEach((s, idx) => {
+    const staffName = s[0].trim();
+    let row = `<tr><td>${idx+1}</td><td class="text-left font-bold px-4 truncate">${staffName}</td><td class="text-[11px] uppercase text-slate-400 font-black px-1">${s[1] || ""}</td>`;
+    let c = { n:0, m:0, a:0, vac:0, trn:0, supp:0, off:0, rTotal:0 };
+    
+    for(let d=1; d<=daysCount; d++) {
+      const assign = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === staffName);
+      let selVal = (assign ? assign.type : "Off").trim();
       
-      head.innerHTML = ""; body.innerHTML = "";
-      watermark.style.display = isFinished ? 'block' : 'none';
-
-      let h1 = `<tr><th rowspan="3" style="width:40px">#</th><th rowspan="3" style="width:175px">ชื่อพนักงาน</th><th rowspan="3" style="width:95px">ตำแหน่ง</th>`, h2 = `<tr>`;
-      for(let d=1; d<=daysCount; d++) {
-        const dObj = new Date(y, m, d), isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
-        h1 += `<th class="${isH ? 'bg-holiday' : ''}" style="width:34px">${d}</th>`;
-        h2 += `<th class="${isH ? 'bg-holiday' : ''}">${dNames[dObj.getDay()]}</th>`;
+      // ตรรกะการนับที่ปรับปรุงใหม่ (Corrected Counting Logic)
+      if(selVal === "Off" || selVal === "" || selVal === " ") {
+        c.off++;
+      } else if(selVal === "VAC") {
+        c.vac++; dStats[d-1]['total']++;
+      } else if(selVal === "อบรม") {
+        c.trn++; dStats[d-1]['total']++;
+      } else {
+        // นับยอดเวรจริง (Exact match - ไม่มี *)
+        if (selVal.includes('ด')) { 
+            if(!selVal.includes('ด*')) { c.n++; dStats[d-1]['ด']++; } else { c.supp++; }
+        }
+        if (selVal.includes('ช')) { 
+            if(!selVal.includes('ช*')) { c.m++; dStats[d-1]['ช']++; } else { c.supp++; }
+        }
+        if (selVal.includes('บ')) { 
+            if(!selVal.includes('บ*')) { c.a++; dStats[d-1]['บ']++; } else { c.supp++; }
+        }
+        // สรุปยอดปฏิบัติงานทั้งหมดของวันนั้น (ด+ช+บ)
+        dStats[d-1]['total'] += selVal.replace(/\*/g, '').length;
       }
-      h1 += `<th colspan="6" style="width:200px">เวรจริง</th><th rowspan="3" style="width:45px">เสริม</th><th rowspan="3" style="width:70px">Σ รวม</th><th rowspan="3" style="width:45px">หยุด</th></tr>`;
-      h2 += `</tr><tr>`;
-      for(let d=1; d<=daysCount; d++) h2 += `<th class="${(new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0'))) ? 'bg-holiday' : ''}"></th>`;
-      h2 += `<th>ด</th><th>ช</th><th>บ</th><th>V</th><th>อ</th><th class="bg-blue-50 font-black">Σ จริง</th></tr>`;
-      head.innerHTML = h1 + h2;
 
-      let dStats = Array.from({length: daysCount}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
-      appData.staff.forEach((s, idx) => {
-        const staffName = s[0].trim();
-        let row = `<tr><td>${idx+1}</td><td class="text-left font-bold px-4 truncate">${staffName}</td><td class="text-[11px] uppercase text-slate-400 font-black px-1">${s[1] || ""}</td>`;
-        let c = { n:0, m:0, a:0, vac:0, trn:0, supp:0, off:0, rTotal:0 };
-        
-        for(let d=1; d<=daysCount; d++) {
-          const assign = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === staffName);
-          let selVal = assign ? assign.type : "Off";
-          
-          if(!['Off','VAC','อบรม'].includes(selVal)) {
-            // นับยอดรายบุคคล (แยกเวรควบ)
-            if(selVal.includes('ด')) { if(!selVal.includes('ด*')) c.n++; dStats[d-1]['ด']++; }
-            if(selVal.includes('ช')) { if(!selVal.includes('ช*')) c.m++; dStats[d-1]['ช']++; }
-            if(selVal.includes('บ')) { if(!selVal.includes('บ*')) c.a++; dStats[d-1]['บ']++; }
-            if(selVal.includes('*')) c.supp += (selVal.match(/\*/g) || []).length;
-            dStats[d-1]['total'] += (selVal.includes('ด')?1:0) + (selVal.includes('ช')?1:0) + (selVal.includes('บ')?1:0);
-          } else {
-            if(selVal === 'Off') c.off++;
-            else if(selVal === 'VAC') { c.vac++; dStats[d-1]['total']++; }
-            else if(selVal === 'อบรม') { c.trn++; dStats[d-1]['total']++; }
-          }
-
-          const isH = (new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
-          row += `<td class="${isH ? 'bg-holiday' : ''} ${assign?.isBooked ? 'cell-booked' : ''}"><select class="select-shift" onchange="handleShiftChange('${staffName}', ${d-1}, this)" ${isFinished ? 'disabled' : ''}>`;
-          ["Off", "ด", "ด*", "ช", "ช*", "บ", "บ*", "ดบ", "ด*บ", "ดบ*", "ชบ", "ช*บ", "ชบ*", "ช*บ*", "ด*บ*", "VAC", "อบรม"].forEach(o => { row += `<option value="${o}" ${selVal === o ? 'selected' : ''}>${o}</option>`; });
-          row += `</select></td>`;
-        }
-        
-        c.rTotal = c.n + c.m + c.a + c.vac + c.trn; 
-        let weightSum = c.rTotal + c.supp; 
-
-        row += `<td>${c.n}</td><td>${c.m}</td><td>${c.a}</td><td>${c.vac}</td><td>${c.trn}</td><td class="bg-blue-50 font-black ${c.rTotal < currentWorkDays ? 'text-danger underline decoration-4' : 'text-blue-800'}">${c.rTotal}</td><td class="font-bold text-indigo-600">${c.supp}</td><td class="bg-slate-50 font-black text-slate-800">${weightSum}</td><td class="text-slate-400 font-bold">${c.off}</td></tr>`;
-        body.innerHTML += row;
-      });
-
-      // สรุปยอดรายวัน (รวมจริง+เสริม)
-      ['ด','ช','บ','total'].forEach(type => {
-        let label = type === 'total' ? 'Σ พนักงานปฏิบัติงานทั้งหมด' : `สรุปเวรผลัด ${type} (จริง+เสริม)`;
-        let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-4 italic uppercase tracking-tighter">${label}</td>`;
-        for(let d=0; d<daysCount; d++) {
-          const val = dStats[d][type]; 
-          const target = type === 'total' ? (currentTargets[d] ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : 0) : (currentTargets[d] ? currentTargets[d][type] : 0);
-          
-          let cl = val < target ? "text-danger" : (val > target ? "text-orange" : (type==='total'?'text-blue-700':'text-success'));
-          fRow += `<td class="${cl}">${val}</td>`;
-        }
-        fRow += `<td colspan="9"></td></tr>`; body.innerHTML += fRow;
-      });
+      const isH = (new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
+      row += `<td class="${isH ? 'bg-holiday' : ''} ${assign?.isBooked ? 'cell-booked' : ''}"><select class="select-shift" onchange="handleShiftChange('${staffName}', ${d-1}, this)" ${isFinished ? 'disabled' : ''}>`;
+      ["Off", "ด", "ด*", "ช", "ช*", "บ", "บ*", "ดบ", "ด*บ", "ดบ*", "ชบ", "ช*บ", "ชบ*", "ช*บ*", "ด*บ*", "VAC", "อบรม"].forEach(o => { row += `<option value="${o}" ${selVal === o ? 'selected' : ''}>${o}</option>`; });
+      row += `</select></td>`;
     }
+    
+    c.rTotal = c.n + c.m + c.a + c.vac + c.trn; 
+    let weightSum = c.rTotal + c.supp; 
+
+    row += `<td>${c.n}</td><td>${c.m}</td><td>${c.a}</td><td>${c.vac}</td><td>${c.trn}</td><td class="bg-blue-50 font-black ${c.rTotal < currentWorkDays ? 'text-danger underline decoration-4' : 'text-blue-800'}">${c.rTotal}</td><td class="font-bold text-indigo-600">${c.supp}</td><td class="bg-slate-50 font-black text-slate-800">${weightSum}</td><td class="text-slate-400 font-bold">${c.off}</td></tr>`;
+    body.innerHTML += row;
+  });
+
+  // สรุปท้ายตารางคงเดิม...
+  ['ด','ช','บ','total'].forEach(type => {
+    let label = type === 'total' ? 'Σ พนักงานปฏิบัติงานทั้งหมด' : `สรุปเวรผลัด ${type} (จริง+เสริม)`;
+    let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-4 italic uppercase tracking-tighter">${label}</td>`;
+    for(let d=0; d<daysCount; d++) {
+      const val = dStats[d][type]; 
+      const target = type === 'total' ? (currentTargets[d] ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : 0) : (currentTargets[d] ? currentTargets[d][type] : 0);
+      let cl = val < target ? "text-danger" : (val > target ? "text-orange" : (type==='total'?'text-blue-700':'text-success'));
+      fRow += `<td class="${cl}">${val}</td>`;
+    }
+    fRow += `<td colspan="9"></td></tr>`; body.innerHTML += fRow;
+  });
+}
 
     function handleShiftChange(name, dIdx, el) {
       if(isFinished) { el.value = currentSchedule[dIdx].assignments.find(a => a.name === name).type; return; }
