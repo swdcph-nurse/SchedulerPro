@@ -319,7 +319,7 @@
       Swal.fire({ title: 'สำเร็จ', icon: 'success', timer: 1000 });
     }
 
-    /* ค้นหาฟังก์ชัน renderTable() ในไฟล์เดิมแล้วแทนที่ด้วยโค้ดนี้ */
+// --- ค้นหาฟังก์ชัน renderTable() ใน index.html และแทนที่ด้วยชุดนี้เพื่อแก้ปัญหายอดรวม ---
 
 function renderTable() {
   const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value;
@@ -354,26 +354,32 @@ function renderTable() {
       const assign = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === staffName);
       let selVal = (assign ? assign.type : "Off").trim();
       
-      // ตรรกะการนับที่ปรับปรุงใหม่ (Corrected Counting Logic)
-      if(selVal === "Off" || selVal === "" || selVal === " ") {
+      // การนับยอดแบบแม่นยำ (Exact Precision Counting)
+      if (['Off', '', ' '].includes(selVal)) {
         c.off++;
-      } else if(selVal === "VAC") {
+      } else if (selVal === "VAC") {
         c.vac++; dStats[d-1]['total']++;
-      } else if(selVal === "อบรม") {
+      } else if (selVal === "อบรม") {
         c.trn++; dStats[d-1]['total']++;
       } else {
-        // นับยอดเวรจริง (Exact match - ไม่มี *)
+        // นับยอดเวร ด, ช, บ รายบุคคล
         if (selVal.includes('ด')) { 
-            if(!selVal.includes('ด*')) { c.n++; dStats[d-1]['ด']++; } else { c.supp++; }
+          if (!selVal.includes('ด*')) c.n++; 
+          else c.supp++; 
+          dStats[d-1]['ด']++; // สรุปผลัดรายวันให้นับรวมทั้งจริงและเสริม
         }
         if (selVal.includes('ช')) { 
-            if(!selVal.includes('ช*')) { c.m++; dStats[d-1]['ช']++; } else { c.supp++; }
+          if (!selVal.includes('ช*')) c.m++; 
+          else c.supp++; 
+          dStats[d-1]['ช']++;
         }
         if (selVal.includes('บ')) { 
-            if(!selVal.includes('บ*')) { c.a++; dStats[d-1]['บ']++; } else { c.supp++; }
+          if (!selVal.includes('บ*')) c.a++; 
+          else c.supp++; 
+          dStats[d-1]['บ']++;
         }
-        // สรุปยอดปฏิบัติงานทั้งหมดของวันนั้น (ด+ช+บ)
-        dStats[d-1]['total'] += selVal.replace(/\*/g, '').length;
+        // Σ ภาระงานรายวัน (นับตามจำนวนเวรที่ขึ้น ไม่ว่าจริงหรือเสริม)
+        dStats[d-1]['total'] += (selVal.replace(/\*/g, '').length);
       }
 
       const isH = (new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
@@ -389,13 +395,13 @@ function renderTable() {
     body.innerHTML += row;
   });
 
-  // สรุปท้ายตารางคงเดิม...
+  // ส่วนสรุปท้ายตารางรายวัน (รวมจริง+เสริม)
   ['ด','ช','บ','total'].forEach(type => {
     let label = type === 'total' ? 'Σ พนักงานปฏิบัติงานทั้งหมด' : `สรุปเวรผลัด ${type} (จริง+เสริม)`;
     let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-4 italic uppercase tracking-tighter">${label}</td>`;
     for(let d=0; d<daysCount; d++) {
       const val = dStats[d][type]; 
-      const target = type === 'total' ? (currentTargets[d] ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : 0) : (currentTargets[d] ? currentTargets[d][type] : 0);
+      const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
       let cl = val < target ? "text-danger" : (val > target ? "text-orange" : (type==='total'?'text-blue-700':'text-success'));
       fRow += `<td class="${cl}">${val}</td>`;
     }
