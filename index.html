@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sawang Daen Din Scheduler Pro v30.30</title>
+  <title>Sawang Daen Din Scheduler Pro v30.32</title>
   <link rel="icon" type="image/png" href="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -22,9 +22,9 @@
     .type-ด { background: #1e40af; } .type-ช { background: #15803d; } .type-บ { background: #b45309; }
     .type-x, .type-vac, .type-อบรม, .type-VAC { background: #64748b; }
     
-    /* Official Table Layout v30.30 - Perfect Symmetry */
+    /* Official Table Layout v30.32 */
     .table-container { overflow-x: auto; border-radius: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); background: white; }
-    .table-official { table-layout: fixed; border-collapse: collapse; width: 100%; font-size: 12.5px; min-width: 1600px; }
+    .table-official { table-layout: fixed; border-collapse: collapse; width: 100%; font-size: 12.5px; min-width: 1650px; }
     .table-official th, .table-official td { border: 1px solid #94a3b8; text-align: center; vertical-align: middle; overflow: hidden; }
     .table-official th { background-color: #f8fafc; font-weight: 800; padding: 4px 0px; color: #1e293b; line-height: 1.1; }
     .table-official td { height: 40px; background: white; }
@@ -33,9 +33,10 @@
     .col-id { width: 32px; } 
     .col-name { width: 160px; } 
     .col-pos { width: 85px; } 
-    .col-day { width: 35px; min-width: 35px; } /* ช่องวันที่ */
-    .col-stat { width: 35px !important; min-width: 35px !important; background-color: #f9fafb !important; } /* ช่องย่อยสถิติเท่ากันเป๊ะ */
-    .col-total { width: 60px !important; min-width: 60px !important; background-color: #eff6ff !important; border-left: 2px solid #3b82f6 !important; } 
+    .col-day { width: 35px; min-width: 35px; } 
+    .col-stat { width: 35px !important; min-width: 35px !important; background-color: #f9fafb !important; } 
+    .col-total { width: 55px !important; min-width: 55px !important; background-color: #eff6ff !important; border-left: 2px solid #3b82f6 !important; } 
+    .col-supp { width: 55px !important; min-width: 55px !important; background-color: #fff7ed !important; border-left: 1px solid #f97316 !important; } /* คอลัมน์เวรเสริม */
     
     .bg-holiday { background-color: #cbd5e1 !important; color: #000; font-weight: bold; } 
     .cell-booked { background-color: #f0f9ff !important; border: 2.5px solid #3b82f6 !important; }
@@ -206,7 +207,7 @@
        const daysCount = new Date(y, m+1, 0).getDate();
        for(let d=1; d<=daysCount; d++) {
          const isWeekend = new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6;
-         container.innerHTML += `<label class="${isWeekend ? 'opacity-30' : ''} px-2 py-0.5 border rounded bg-white font-bold text-[10px] cursor-pointer hover:bg-indigo-50"><input type="checkbox" onchange="updateWorkDayCount(); renderTable();" value="${d.toString().padStart(2,'0')}" class="extra-h mr-1">${d}</label>`;
+         container.innerHTML += `<label class="${isWeekend ? 'opacity-30' : ''} px-2 py-0.5 border rounded bg-white font-bold text-[9px] cursor-pointer hover:bg-indigo-50 transition"><input type="checkbox" onchange="updateWorkDayCount(); renderTable();" value="${d.toString().padStart(2,'0')}" class="extra-h mr-1">${d}</label>`;
        }
     }
 
@@ -237,7 +238,8 @@
         h1 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${d}</th>`;
         h2 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${dNames[dObj.getDay()]}</th>`;
       }
-      h1 += `<th colspan="5">สถิติรายคน</th><th class="col-total" rowspan="3">รวม</th></tr>`;
+      // สถิติสะสมรายคน - Sub-columnsกว้าง 35px เท่าช่องวันเวร
+      h1 += `<th colspan="5">สถิติสะสมรายคน</th><th class="col-total" rowspan="3">รวม</th><th class="col-supp" rowspan="3">เสริม</th></tr>`;
       h2 += `</tr><tr>`;
       for(let d=1; d<=daysCount; d++) h2 += `<th class="${(new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0'))) ? 'bg-holiday' : ''}"></th>`;
       h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th></tr>`;
@@ -247,18 +249,25 @@
       appData.staff.forEach((s, idx) => {
         const staffName = s[0].trim();
         let row = `<tr><td>${idx+1}</td><td class="text-left font-bold px-2 truncate text-[14px]">${staffName}</td><td class="text-[9.5px] text-slate-400 font-bold truncate uppercase">${s[1] || ""}</td>`;
-        let c = { d:0, m:0, a:0, v:0, t:0, total:0 };
+        let c = { d:0, m:0, a:0, v:0, t:0, total:0, supp:0 };
         for(let d=1; d<=daysCount; d++) {
           const assign = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === staffName);
           let val = (assign ? assign.type : "x").trim();
+          
+          // Counting Logic
           if (val.includes('ด')) { c.d++; dStats[d-1]['ด']++; }
           if (val.includes('ช')) { c.m++; dStats[d-1]['ช']++; }
           if (val.includes('บ')) { c.a++; dStats[d-1]['บ']++; }
           if (val.toLowerCase().includes('vac')) { c.v++; }
           if (val.includes('อบรม')) { c.t++; }
+          
+          // นับเวรเสริมรายคน (นับจำนวนเครื่องหมาย *)
+          let supplementalCount = (val.match(/\*/g) || []).length;
+          c.supp += supplementalCount;
+
           if (!['x','X','',' '].includes(val)) {
-             let workload = (val.includes('ด')?1:0) + (val.includes('ช')?1:0) + (val.includes('บ')?1:0) + (val.toLowerCase().includes('vac')?1:0) + (val.includes('อบรม')?1:0);
-             dStats[d-1]['total'] += workload;
+             let dailyImpact = (val.includes('ด')?1:0) + (val.includes('ช')?1:0) + (val.includes('บ')?1:0) + (val.toLowerCase().includes('vac')?1:0) + (val.includes('อบรม')?1:0);
+             dStats[d-1]['total'] += dailyImpact;
           }
           const isH = (new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
           row += `<td class="col-day ${isH ? 'bg-holiday' : ''} ${assign?.isBooked ? 'cell-booked' : ''}"><select class="select-shift" onchange="handleShiftChange('${staffName}', ${d-1}, this)" ${ (isFinished || (assign?.isBooked && !isAdmin)) ? 'disabled' : '' }>`;
@@ -267,7 +276,7 @@
           row += `</select></td>`;
         }
         c.total = c.d + c.m + c.a + c.v + c.t;
-        row += `<td class="col-stat font-bold text-slate-700 text-base">${c.d}</td><td class="col-stat font-bold text-slate-700 text-base">${c.m}</td><td class="col-stat font-bold text-slate-700 text-base">${c.a}</td><td class="col-stat font-bold text-slate-500 text-base">${c.v}</td><td class="col-stat font-bold text-slate-500 text-base">${c.t}</td><td class="col-total font-black text-blue-800 text-[15.5px]">${c.total}</td></tr>`;
+        row += `<td class="col-stat font-bold text-slate-700 text-base">${c.d}</td><td class="col-stat font-bold text-slate-700 text-base">${c.m}</td><td class="col-stat font-bold text-slate-700 text-base">${c.a}</td><td class="col-stat font-bold text-slate-500 text-base">${c.v}</td><td class="col-stat font-bold text-slate-500 text-base">${c.t}</td><td class="col-total font-black text-blue-800 text-[15.5px]">${c.total}</td><td class="col-supp font-black text-orange-700 text-[15.5px]">${c.supp}</td></tr>`;
         body.innerHTML += row;
       });
       
@@ -279,7 +288,7 @@
           let cl = val < target ? "text-danger" : (val > target ? "text-orange" : (type === 'total' ? "text-blue-700" : "text-success"));
           fRow += `<td class="${cl}">${val}</td>`;
         }
-        fRow += `<td colspan="6"></td></tr>`; body.innerHTML += fRow;
+        fRow += `<td colspan="7"></td></tr>`; body.innerHTML += fRow;
       });
     }
 
@@ -325,7 +334,7 @@
         const { value: sName } = await Swal.fire({ title: 'จองเวรให้พนักงาน', input: 'select', inputOptions: staffOptions, showCancelButton: true });
         if(!sName) return; targetName = sName;
       }
-      const { value: type } = await Swal.fire({ title: 'ระบุเวร', input: 'select', inputOptions: { 'ด':'ด','ช':'ช','บ':'บ','x':'x','vac':'vac','อบรม':'อบรม' }, inputValue: existing, showCancelButton: true });
+      const { value: type } = await Swal.fire({ title: 'ระบุเวร', input: 'select', inputOptions: { 'ด':'ด','ช':'ช','บ':'บ','off':'x','vac':'vac','อบรม':'อบรม' }, inputValue: existing, showCancelButton: true });
       if(type) { if(existing || isAdmin) await callAPI('deleteBooking', 'POST', { date, name: targetName }); await callAPI('saveBooking', 'POST', { data: {date, name: targetName, type} }); refresh(); }
     }
 
@@ -356,7 +365,7 @@
       if (isFinished) return Swal.fire('ล็อกตารางแล้ว', '', 'warning');
       const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value, extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value);
       const q = { wd_r_n: document.getElementById('q_wd_r_n').value, wd_r_m: document.getElementById('q_wd_r_m').value, wd_r_a: document.getElementById('q_wd_r_a').value, wd_s_n: document.getElementById('q_wd_s_n').value, wd_s_m: document.getElementById('q_wd_s_m').value, wd_s_a: document.getElementById('q_wd_s_a').value, hd_r_n: document.getElementById('q_hd_r_n').value, hd_r_m: document.getElementById('q_hd_r_m').value, hd_r_a: document.getElementById('q_hd_r_a').value, hd_s_n: document.getElementById('q_hd_s_n').value, hd_s_m: document.getElementById('q_hd_s_m').value, hd_s_a: document.getElementById('q_hd_s_a').value };
-      Swal.fire({ title: 'AI กำลังประมวลผล...', text: 'รักษากฎเหล็กห้ามทับเวรจองและกระจายความหลากหลาย', didOpen: () => Swal.showLoading(), showConfirmButton: false });
+      Swal.fire({ title: 'AI กำลังประมวลผล...', text: 'กำลังล็อกเวรจองและกระจายความหลากหลาย', didOpen: () => Swal.showLoading(), showConfirmButton: false });
       const res = await callAPI('generate', 'POST', { month: m, year: y, extraHolidays: extraH, q });
       if (res) { currentSchedule = res.schedule; currentTargets = res.targets; renderTable(); }
       Swal.close(); 
@@ -369,7 +378,7 @@
     }
 
     async function finalizeSchedule() { if(await Swal.fire({ title: 'จัดเวรเสร็จสิ้น?', text: 'ตารางจะถูกล็อกถาวรและมีลายน้ำกำกับ', icon: 'question', showCancelButton: true, confirmButtonColor: '#9333ea' }).then(r=>r.isConfirmed)) { isFinished = true; await saveSchedule(); renderTable(); }}
-    function exportExcel() { const table = document.getElementById("mainTable"), tableClone = table.cloneNode(true); tableClone.querySelectorAll('select').forEach(sel => { sel.parentNode.replaceChild(document.createTextNode(sel.value), sel); }); XLSX.writeFile(XLSX.utils.table_to_book(tableClone), `Duty_Schedule_v30.30.xlsx`); }
+    function exportExcel() { const table = document.getElementById("mainTable"), tableClone = table.cloneNode(true); tableClone.querySelectorAll('select').forEach(sel => { sel.parentNode.replaceChild(document.createTextNode(sel.value), sel); }); XLSX.writeFile(XLSX.utils.table_to_book(tableClone), `Shift_Schedule_v30.32.xlsx`); }
 
     function copyTableToClipboard() {
       const table = document.getElementById("mainTable");
