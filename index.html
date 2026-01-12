@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SWD Scheduler Pro v31.25</title>
+  <title>SWD Scheduler Pro v31.28</title>
   <link rel="icon" type="image/png" href="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,7 +13,8 @@
   <style>
     body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 14px; color: #1e293b; overflow-x: hidden; }
     
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; height: 10px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f1f5f9; }
     ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
@@ -22,13 +23,14 @@
     .tab-active { display: block; animation: slideUp 0.3s ease-out; }
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     
+    /* Sticky Table */
     .table-container { 
       overflow: auto; 
       border-radius: 1.25rem; 
       border: 1px solid #e2e8f0; 
       background: white; 
       max-width: 100%; 
-      max-height: 78vh; 
+      max-height: 75vh; 
       position: relative;
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
       display: block;
@@ -40,26 +42,26 @@
     .sticky-col-2 { position: sticky; left: 45px; z-index: 20; background: #fff !important; min-width: 200px; width: 200px; text-align: left !important; padding-left: 12px !important; }
     .sticky-col-3 { position: sticky; left: 245px; z-index: 20; background: #fff !important; min-width: 100px; width: 100px; border-right: 2px solid #cbd5e1 !important; }
 
-    thead th { position: sticky; top: 0; z-index: 30; background: #f8fafc !important; color: #475569; font-weight: 700; padding: 12px 0; }
+    thead th { position: sticky; top: 0; z-index: 30; background: #f8fafc !important; color: #475569; font-weight: 700; padding: 10px 0; }
     thead th.sticky-col-1, thead th.sticky-col-2, thead th.sticky-col-3 { z-index: 40; }
 
-    .col-day { min-width: 75px; width: 75px; height: 52px; }
+    .col-day { min-width: 72px; width: 72px; height: 50px; }
     .col-stat { min-width: 50px; background: #fcfdfe !important; }
-    .col-total { min-width: 80px; background: #eff6ff !important; border-left: 2.5px solid #bfdbfe !important; }
-    .col-supp { min-width: 80px; background: #fff7ed !important; }
+    .col-total { min-width: 75px; background: #eff6ff !important; border-left: 2.5px solid #bfdbfe !important; }
+    .col-supp { min-width: 75px; background: #fff7ed !important; }
 
     .bg-holiday { background-color: #f1f5f9 !important; color: #ef4444; font-weight: 800; } 
     .cell-booked { background-color: #f0f9ff !important; outline: 2.5px solid #3b82f6; outline-offset: -2.5px; }
     
     .select-shift { width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-weight: 700; cursor: pointer; font-size: 15px; color: #1e293b; outline: none; }
     
-    /* ระบบสีเวรจองบนปฏิทิน */
-    .tag-booking { font-size: 10.5px; padding: 2.5px 5px; border-radius: 6px; color: white; margin-bottom: 3px; font-weight: 700; line-height: 1.1; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-    .type-ด { background: linear-gradient(135deg, #1e40af, #3b82f6); } /* ดึก - น้ำเงิน */
-    .type-ช { background: linear-gradient(135deg, #15803d, #22c55e); } /* เช้า - เขียว */
-    .type-บ { background: linear-gradient(135deg, #b45309, #f59e0b); } /* บ่าย - ส้ม */
-    .type-ควบ { background: linear-gradient(135deg, #7c3aed, #a855f7); } /* เวรควบ - ม่วง */
-    .type-ลา { background: linear-gradient(135deg, #475569, #64748b); } /* ลา/อบรม - เทา */
+    /* Calendar Tags */
+    .tag-booking { font-size: 10.5px; padding: 2.5px 5px; border-radius: 6px; color: white; margin-bottom: 3px; font-weight: 700; line-height: 1.1; box-shadow: 0 1px 2px rgba(0,0,0,0.1); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .type-ด { background: linear-gradient(135deg, #1e40af, #3b82f6); }
+    .type-ช { background: linear-gradient(135deg, #15803d, #22c55e); }
+    .type-บ { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .type-ควบ { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+    .type-ลา { background: linear-gradient(135deg, #475569, #64748b); }
     .type-x { background: #94a3b8; }
 
     #mode-overlay { position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(15, 23, 42, 0.98), #0f172a); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(12px); transition: opacity 0.4s; }
@@ -70,12 +72,12 @@
 
     .calendar-day { min-height: 100px; border: 1px solid #f1f5f9; background: white; cursor: pointer; transition: all 0.2s; }
     .calendar-day:hover { background: #fdfdfd; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); border-color: #3b82f6; }
-
     .drag-handle { cursor: grab; color: #cbd5e1; font-size: 18px; padding-right: 8px; }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
 
+  <!-- Mode Selector -->
   <div id="mode-overlay">
     <div class="mode-card">
       <div class="inline-flex p-4 rounded-3xl bg-blue-50 mb-6">
@@ -99,6 +101,7 @@
   </div>
 
   <div id="main-ui" style="display: none;">
+    <!-- Navigation -->
     <header class="modern-nav px-4 py-3 md:px-8 mb-6 shadow-sm no-print">
       <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-4">
@@ -121,6 +124,7 @@
     </header>
 
     <main class="max-w-[1600px] mx-auto px-4 pb-12">
+      <!-- Tab: Booking -->
       <div id="tab-booking" class="tab-content tab-active">
         <div class="bg-white p-6 rounded-3xl border border-slate-200 mb-6 shadow-sm no-print">
           <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
@@ -146,9 +150,11 @@
         <div id="calendarGrid" class="grid grid-cols-7 bg-slate-200 gap-px rounded-[2rem] overflow-hidden border-4 border-white shadow-xl"></div>
       </div>
 
+      <!-- Tab: Schedule -->
       <div id="tab-schedule" class="tab-content">
         <div class="bg-white p-6 rounded-3xl shadow-sm mb-6 border border-slate-200 no-print">
           <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+            <!-- Part 1: Date Info -->
             <div class="md:col-span-3 border-r border-slate-100 pr-6">
               <div class="text-[10px] font-black uppercase mb-4 text-slate-400 tracking-widest">ข้อมูลเดือนทำการ</div>
               <div class="flex gap-2 mb-3">
@@ -157,9 +163,10 @@
               </div>
               <div id="workDayDisplay" class="text-sm font-black text-indigo-700 bg-indigo-50 p-3 rounded-xl text-center shadow-inner"></div>
             </div>
+            <!-- Part 2 & 3 Combined -->
             <div class="md:col-span-9">
                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-                  <!-- อัตรากำลัง -->
+                  <!-- Targets Group -->
                   <div class="md:col-span-7 bg-slate-50/50 p-4 rounded-3xl border border-slate-100">
                      <div class="text-[10px] font-black uppercase mb-4 text-slate-400 tracking-widest">กำหนดอัตรากำลัง (หลัก / เสริม)</div>
                      <div class="grid grid-cols-2 gap-6">
@@ -175,13 +182,13 @@
                         </div>
                      </div>
                   </div>
-                  <!-- วันหยุดพิเศษ -->
+                  <!-- Holidays Group -->
                   <div class="md:col-span-5 flex flex-col">
                     <div class="bg-white p-4 rounded-3xl border border-slate-100 flex-1">
                        <div class="text-[10px] font-black uppercase mb-2 text-slate-400 tracking-widest">กำหนดวันหยุดพิเศษเพิ่มเติม</div>
                        <div id="holidayCheck" class="flex flex-wrap gap-1.5 h-auto border border-slate-100 p-3 rounded-xl bg-slate-50/50 text-[10px] shadow-inner"></div>
                     </div>
-                    <!-- ปุ่มสั่งงานแบบจัดระเบียบใหม่ -->
+                    <!-- Action Buttons -->
                     <div class="flex gap-2 mt-4">
                        <button onclick="processAuto()" class="flex-1 btn-action bg-blue-600 text-white hover:bg-blue-700 py-3 shadow-lg shadow-blue-200 text-xs font-black">🚀 จัดเวรโดย AI</button>
                        <button onclick="clearScheduleUI()" class="w-1/4 btn-action bg-slate-100 text-slate-600 hover:bg-slate-200 py-3 text-xs font-black">ล้าง</button>
@@ -193,8 +200,10 @@
           </div>
         </div>
 
+        <!-- Main Schedule Table View -->
         <div id="report-view" class="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 relative min-h-[700px]">
           <div class="text-center mb-10"><h2 id="table-title" class="text-2xl font-black text-slate-800 mb-2 tracking-tight uppercase underline underline-offset-8 decoration-blue-200">...</h2><p id="sub-header" class="text-slate-400 font-bold text-sm tracking-wide"></p></div>
+          <div id="watermark" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-30deg); font-size:80px; color:rgba(59,130,246,0.05); pointer-events:none; white-space:nowrap; font-weight:900; z-index:10;">VERIFIED BY SDP PRO</div>
           <div class="table-container shadow-inner border rounded-2xl">
             <table id="mainTable" class="table-official bg-white">
               <thead id="dutyHead"></thead>
@@ -205,6 +214,7 @@
         </div>
       </div>
 
+      <!-- Tab: Settings -->
       <div id="tab-settings" class="tab-content">
          <div class="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 max-w-2xl mx-auto">
             <div class="text-center mb-10">
@@ -245,7 +255,7 @@
       const items = document.querySelectorAll('#staffList > div');
       const newList = [];
       items.forEach(item => { newList.push({ name: item.getAttribute('data-name'), pos: item.getAttribute('data-pos') }); });
-      showProgress('กำลังบันทึกลำดับใหม่...');
+      showProgress('กำลังบันทึกเรียงลำดับใหม่...');
       await callAPI('manageStaff', 'POST', { subAction: 'reorder', data: newList });
       await refresh(false);
       Swal.close();
@@ -261,7 +271,7 @@
       }, 400);
       const label = (mode === 'nurse') ? 'พยาบาลวิชาชีพ' : 'พนักงานช่วยเหลือคนไข้';
       document.getElementById('role-label').innerText = label;
-      document.getElementById('table-title').innerText = `บัญชีรายละเอียดการจัดเวร (${label})`;
+      document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน(${label})`;
       document.querySelectorAll('.role-name').forEach(el => el.innerText = label);
       refresh();
     }
@@ -333,11 +343,21 @@
 
     async function handleMonthYearChange() {
       const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value;
-      document.getElementById('sub-header').innerHTML = `งานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม | ประจำเดือน ${mNames[m]} พ.ศ. ${parseInt(y)+543}`;
+      document.getElementById('sub-header').innerHTML = `งานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ | ประจำเดือน ${mNames[m]} พ.ศ. ${parseInt(y)+543}`;
       await refresh(false); 
       const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
-      if (savedData && savedData.schedule) { currentSchedule = savedData.schedule; currentTargets = savedData.targets; currentWorkDays = savedData.workDays; isFinished = savedData.isFinished || false; if (!isFinished) syncBookingsIntoSchedule(); } else { currentSchedule = constructInitialDraft(m, y); isFinished = false; }
-      updateWorkDayCount(); renderTable();
+      
+      if (savedData && savedData.schedule && savedData.schedule.length > 0) { 
+        currentSchedule = savedData.schedule; 
+        currentTargets = savedData.targets; 
+        currentWorkDays = savedData.workDays; 
+        isFinished = savedData.isFinished || false; 
+      } else { 
+        currentSchedule = constructInitialDraft(m, y); 
+        isFinished = false; 
+      }
+      updateWorkDayCount(); 
+      renderTable();
     }
 
     function syncBookingsIntoSchedule() {
@@ -368,47 +388,55 @@
     function renderTable() {
       const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value;
       const extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value);
-      const daysCount = new Date(y, parseInt(m) + 1, 0).getDate();
+      const daysInMonth = new Date(y, parseInt(m) + 1, 0).getDate();
       const head = document.getElementById('dutyHead'), body = document.getElementById('dutyBody');
       head.innerHTML = ""; body.innerHTML = "";
       
-      // ลดแถวว่างใน Header จาก 3 เหลือ 2 ที่จำเป็น
       let h1 = `<tr><th class="sticky-col-1" rowspan="2">#</th><th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th><th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`, 
           h2 = `<tr>`;
-      
-      for(let d=1; d<=daysCount; d++) { 
+      for(let d=1; d<=daysInMonth; d++) { 
         const dObj = new Date(y, m, d), isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || extraH.includes(d.toString().padStart(2,'0'))); 
         h1 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${d}</th>`; 
         h2 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${dNames[dObj.getDay()]}</th>`; 
       }
-      
       h1 += `<th colspan="5">สถิติสะสมรายคน</th><th class="col-total" rowspan="2">รวม</th><th class="col-supp" rowspan="2">เสริม</th></tr>`;
       h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th></tr>`;
       
       head.innerHTML = h1 + h2;
-      let dStats = Array.from({length: daysCount}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
+      let dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
+      const dutyChoices = ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม"];
+
       if(appData.staff) appData.staff.forEach((s, idx) => {
         const staffName = s[0].trim();
         let row = `<tr><td class="sticky-col-1">${idx+1}</td><td class="sticky-col-2 font-bold truncate">${staffName}</td><td class="sticky-col-3 text-[10px] text-slate-400 font-bold uppercase truncate">${s[1] || ""}</td>`;
         let c = { d:0, m:0, a:0, v:0, t:0, total:0, supp:0 };
-        for(let d=1; d<=daysCount; d++) {
+        
+        for(let d=1; d<=daysInMonth; d++) {
           const assign = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === staffName);
           let val = (assign ? assign.type : "x").trim();
+          
           if (val.includes('ด')) { c.d++; dStats[d-1]['ด']++; } if (val.includes('ช')) { c.m++; dStats[d-1]['ช']++; } if (val.includes('บ')) { c.a++; dStats[d-1]['บ']++; }
           if (val.toLowerCase().includes('vac')) { c.v++; } if (val.includes('อบรม')) { c.t++; }
           c.supp += (val.match(/\*/g) || []).length;
           if (!['x','X','',' '].includes(val)) { dStats[d-1]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')?1:0) + (val.includes('บ')?1:0) + (val.toLowerCase().includes('vac')?1:0) + (val.includes('อบรม')?1:0); }
+          
           const isH = (new Date(y, m, d).getDay() === 0 || new Date(y, m, d).getDay() === 6 || extraH.includes(d.toString().padStart(2,'0')));
-          row += `<td class="col-day ${isH ? 'bg-holiday' : ''} ${assign?.isBooked ? 'cell-booked' : ''}"><select class="select-shift" onchange="handleShiftChange('${staffName}', ${d-1}, this)" ${ (isFinished || (assign?.isBooked && !isAdmin)) ? 'disabled' : '' }><option value="x">x</option><option value="ด">ล</option><option value="ด">ด</option><option value="ช">ช</option><option value="บ">บ</option><option value="ดบ">ดบ</option><option value="ชบ">ชบ</option><option value="ด*">ด*</option><option value="ช*">ช*</option><option value="บ*">บ*</option><option value="ด*บ">ด*บ</option><option value="ดบ*">ดบ*</option><option value="ช*บ">ช*บ</option><option value="ชบ*">ชบ*</option><option value="ด*บ*">ด*บ*</option><option value="ช*บ*">ช*บ*</option><option value="vac">vac</option><option value="อบรม">อบรม</option></select></td>`;
+          let selectHtml = `<td class="col-day ${isH ? 'bg-holiday' : ''} ${assign?.isBooked ? 'cell-booked' : ''}"><select class="select-shift" onchange="handleShiftChange('${staffName}', ${d-1}, this)" ${ (isFinished || (assign?.isBooked && !isAdmin)) ? 'disabled' : '' }>`;
+          dutyChoices.forEach(opt => {
+             selectHtml += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`;
+          });
+          selectHtml += `</select></td>`;
+          row += selectHtml;
         }
         c.total = c.d + c.m + c.a + c.v + c.t;
         row += `<td class="col-stat font-bold text-slate-700">${c.d}</td><td class="col-stat font-bold text-slate-700">${c.m}</td><td class="col-stat font-bold text-slate-700">${c.a}</td><td class="col-stat font-bold text-slate-500">${c.v}</td><td class="col-stat font-bold text-slate-500">${c.t}</td><td class="col-total font-black text-blue-800">${c.total}</td><td class="col-supp font-black text-orange-700">${c.supp}</td></tr>`;
         body.innerHTML += row;
       });
+      
       ['ด','ช','บ','total'].forEach(type => {
         let label = (type === 'total' ? 'รวมยอดอัตรากำลัง' : 'สรุปรายผลัด ' + type);
         let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-4 sticky-col-1 bg-slate-50 font-bold">${label}</td>`;
-        for(let d=0; d<daysCount; d++) { const val = dStats[d][type]; const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0; let cl = val < target ? "text-danger" : (val > target ? "text-orange" : (type === 'total' ? "text-blue-700" : "text-success")); fRow += `<td class="${cl}">${val}</td>`; }
+        for(let d=0; d<daysInMonth; d++) { const val = dStats[d][type]; const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0; let cl = val < target ? "text-danger" : (val > target ? "text-orange" : (type === 'total' ? "text-blue-700" : "text-success")); fRow += `<td class="${cl}">${val}</td>`; }
         fRow += `<td colspan="7"></td></tr>`; body.innerHTML += fRow;
       });
     }
@@ -421,14 +449,13 @@
         const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; 
         const bks = appData.bookings.filter(b => b.date === dStr); 
         let bkHtml = bks.map(b => {
-           // กำหนดประเภทสีตามเวร
            let typeClass = 'type-x';
            if (b.type.length > 1 && !['vac','อบรม'].includes(b.type)) typeClass = 'type-ควบ';
-           else if (b.type.includes('ด')) typeClass = 'type-ด';
+           else if (b.type.includes('ด')) typeClass = 'type-ควบ';
            else if (b.type.includes('ช')) typeClass = 'type-ช';
            else if (b.type.includes('บ')) typeClass = 'type-บ';
            else if (['vac','อบรม'].includes(b.type.toLowerCase())) typeClass = 'type-ลา';
-
+           if (b.type === 'ด') typeClass = 'type-ด';
            return `<div class="tag-booking ${typeClass} truncate" title="${b.name}">${b.name.split(' ')[0]} (${b.type})</div>`;
         }).join(''); 
         grid.innerHTML += `<div class="calendar-day p-2 text-left" onclick="showDayDetails('${dStr}')"><span class="text-[10px] font-bold text-slate-300 mb-1 block">${d}</span><div class="flex flex-col">${bkHtml}</div></div>`; 
@@ -464,7 +491,20 @@
     async function adminDelBook(date, name) { if(await Swal.fire({ title: 'ลบข้อมูล?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }).then(r=>r.isConfirmed)) { showProgress('กำลังลบ...'); await callAPI('deleteBooking', 'POST', { date, name }); refresh(); }}
     async function delBook(date) { if(await Swal.fire({ title: 'ลบรายการจองของคุณ?', icon: 'question', showCancelButton: true, confirmButtonColor: '#ef4444' }).then(r=>r.isConfirmed)) { showProgress('กำลังลบจอง...'); await callAPI('deleteBooking', 'POST', { date, name: currentStaff }); refresh(); }}
 
-    function handleShiftChange(name, dIdx, el) { if(isFinished) return; let existing = currentSchedule[dIdx].assignments.find(a => a.name.trim() === name.trim()); if (existing) { if (existing.isBooked && !['vac','อบรม','x'].includes(el.value.toLowerCase()) && !isAdmin) { Swal.fire('ห้ามแก้ไขเวรจอง!', 'กรุณาแก้ไขผ่านเมนูปฏิทิน', 'warning'); el.value = existing.type; return; } existing.type = el.value; } renderTable(); }
+    function handleShiftChange(name, dIdx, el) { 
+       if(isFinished) return; 
+       let existing = currentSchedule[dIdx].assignments.find(a => a.name.trim() === name.trim()); 
+       if (existing) { 
+          if (existing.isBooked && !['vac','อบรม','x'].includes(el.value.toLowerCase()) && !isAdmin) { 
+             Swal.fire('ห้ามแก้ไขเวรจอง!', 'กรุณาแก้ไขผ่านเมนูปฏิทิน', 'warning'); 
+             el.value = existing.type; 
+             return; 
+          } 
+          existing.type = el.value; 
+       } 
+       renderTable(); 
+    }
+    
     function clearScheduleUI() { if (isFinished) return; Swal.fire({ title: 'ล้างตาราง?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#f59e0b' }).then((result) => { if (result.isConfirmed) { currentSchedule.forEach(day => { day.assignments.forEach(a => { if(!a.isBooked && !['vac','อบรม'].includes(a.type.toLowerCase())) a.type = 'x'; }); }); renderTable(); } }); }
     async function processAuto() { if (isFinished) return; const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value, extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value); const q = { wd_r_n: document.getElementById('q_wd_r_n').value, wd_r_m: document.getElementById('q_wd_r_m').value, wd_r_a: document.getElementById('q_wd_r_a').value, wd_s_n: document.getElementById('q_wd_s_n').value, wd_s_m: document.getElementById('q_wd_s_m').value, wd_s_a: document.getElementById('q_wd_s_a').value, hd_r_n: document.getElementById('q_hd_r_n').value, hd_r_m: document.getElementById('q_hd_r_m').value, hd_r_a: document.getElementById('q_hd_r_a').value, hd_s_n: document.getElementById('q_hd_s_n').value, hd_s_m: document.getElementById('q_hd_s_m').value, hd_s_a: document.getElementById('q_hd_s_a').value }; showProgress('AI กำลังคำนวณเวร...'); const res = await callAPI('generate', 'POST', { month: m, year: y, extraHolidays: extraH, q }); if (res && res.schedule) { currentSchedule = res.schedule; currentTargets = res.targets; renderTable(); } Swal.close(); }
     async function saveSchedule() { const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value; showProgress('กำลังบันทึกข้อมูล...'); await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays, isFinished: isFinished }); Swal.fire('บันทึกสำเร็จ', '', 'success'); }
