@@ -295,7 +295,7 @@
       }, 400);
       const label = (mode === 'nurse') ? 'พยาบาลวิชาชีพ' : 'พนักงานช่วยเหลือคนไข้';
       document.getElementById('role-label').innerText = label;
-      document.getElementById('table-title').innerText = `บัญชีรายละเอียดการจัดเวร (${label})`;
+      document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน(${label})`;
       document.querySelectorAll('.role-name').forEach(el => el.innerText = label);
     }
 
@@ -353,11 +353,18 @@
     }
 
     // --- Scheduling logic ---
+    function handleMonthChange(tab) {
+      if (tab === 'booking') {
+        renderCalendar(); // อัปเดตหน้าปฏิทินจองเวร
+      } else if (tab === 'schedule') {
+        handleMonthYearChange(); // อัปเดตหน้าตารางจัดเวร
+      }
+    }
 
     async function handleMonthYearChange() {
       const mInput = document.getElementById('runMonth'), yInput = document.getElementById('runYear'); if(!mInput || !yInput) return;
       const m = mInput.value, y = yInput.value;
-      document.getElementById('sub-header').innerHTML = `งานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ | ประจำเดือน ${mNames[m]} พ.ศ. ${parseInt(y)+543}`;
+      document.getElementById('sub-header').innerHTML = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ | ประจำเดือน ${mNames[m]} พ.ศ. ${parseInt(y)+543}`;
       await refresh(false); 
       const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
       if (savedData && savedData.schedule && savedData.schedule.length > 0) { currentSchedule = savedData.schedule; currentTargets = savedData.targets; currentWorkDays = savedData.workDays; isFinished = savedData.isFinished || false; } 
