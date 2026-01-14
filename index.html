@@ -101,6 +101,14 @@
       .text-red { color: red !important; font-weight: bold !important; }
       select { appearance: none; -webkit-appearance: none; border: none !important; background: none !important; text-align: center; color: black !important; font-weight: bold !important; font-size: 8.5pt !important; }
     }
+    /* สีประจำโหมด */
+    .mode-nurse-p { border-color: #6366f1 !important; background-color: #f5f3ff !important; }
+    .mode-nurse-m { border-color: #f59e0b !important; background-color: #fffbeb !important; }
+    .mode-asst { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
+    
+    .text-nurse-p { color: #4338ca; }
+    .text-nurse-m { color: #b45309; }
+    .text-asst { color: #1d4ed8; }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -109,21 +117,28 @@
     <div class="mode-card shadow-2xl">
       <div class="inline-flex p-4 rounded-3xl bg-blue-50 mb-6"><img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" class="w-16 h-16 rounded-2xl shadow-sm"></div>
       <h1 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">SWD Scheduler <span class="text-blue-600">Pro</span></h1>
-      <p class="text-slate-400 mb-8 font-medium text-sm px-4">กรุณาเลือกประเภทผู้ใช้งาน</p>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
-        <button onclick="selectMode('nurse')" class="btn-animate group p-6 border-2 border-slate-100 rounded-[2rem] hover:border-indigo-500 hover:bg-indigo-50 flex items-center justify-between">
-          <div class="text-left">
-            <div class="font-black text-slate-800 text-lg leading-tight">พยาบาลวิชาชีพ</div>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Register Nurse</p>
+      <p class="text-slate-400 mb-8 font-medium text-sm px-4">กรุณาเลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 px-4">
+        <button onclick="selectMode('nurse_p')" class="btn-animate group p-5 border-2 rounded-[2rem] mode-nurse-nurse-p flex flex-col items-center gap-3">
+          <div class="text-4xl">🏥</div>
+          <div class="text-center">
+            <div class="font-black text-slate-800 text-sm leading-tight">พยาบาลวิชาชีพ</div>
+            <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">(พิเศษปาริฉัตร)</p>
           </div>
-          <div class="text-4xl">👩‍⚕️</div>
         </button>
-        <button onclick="selectMode('asst')" class="btn-animate group p-6 border-2 border-slate-100 rounded-[2rem] hover:border-blue-500 hover:bg-blue-50 flex items-center justify-between">
-          <div class="text-left">
-            <div class="font-black text-slate-800 text-lg leading-tight">ผู้ช่วยเหลือคนไข้</div>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Nursing Assistant</p>
+        <button onclick="selectMode('nurse_m')" class="btn-animate group p-5 border-2 rounded-[2rem] mode-nurse-m flex flex-col items-center gap-3">
+          <div class="text-4xl">🧘‍♂️</div>
+          <div class="text-center">
+            <div class="font-black text-slate-800 text-sm leading-tight">พยาบาลวิชาชีพ</div>
+            <p class="text-[10px] text-amber-600 font-bold uppercase tracking-widest mt-1">(สงฆ์อาพาธ)</p>
           </div>
+        </button>
+        <button onclick="selectMode('asst')" class="btn-animate group p-5 border-2 rounded-[2rem] mode-asst flex flex-col items-center gap-3">
           <div class="text-4xl">🤝</div>
+          <div class="text-center">
+            <div class="font-black text-slate-800 text-sm leading-tight">พนักงานช่วยเหลือคนไข้</div>
+            <p class="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-1">(NA/Asst)</p>
+          </div>
         </button>
       </div>
     </div>
@@ -469,20 +484,41 @@
     async function refresh(loader = true) { if(loader) showProgress('กำลังเชื่อมต่อฐานข้อมูล...'); try { const data = await callAPI('getAppData', 'GET'); if (data && data.staff) { appData = data; updateUI(); renderCalendar(); } } finally { if(loader) Swal.close(); } }
 
     function selectMode(mode) { 
-      currentGroup = mode; document.getElementById('mode-overlay').style.display = 'none'; document.getElementById('main-ui').style.display = 'block'; 
-      if (mode === 'nurse') {
-        document.getElementById('q_wd_r_n').value = 2; document.getElementById('q_wd_r_m').value = 3; document.getElementById('q_wd_r_a').value = 2;
-        document.getElementById('q_wd_s_n').value = 1; document.getElementById('q_wd_s_m').value = 0; document.getElementById('q_wd_s_a').value = 1;
-        document.getElementById('q_hd_r_n').value = 2; document.getElementById('q_hd_r_m').value = 2; document.getElementById('q_hd_r_a').value = 2;
+      currentGroup = mode; 
+      document.getElementById('mode-overlay').style.display = 'none'; 
+      document.getElementById('main-ui').style.display = 'block'; 
+      
+      const label = document.getElementById('role-label');
+      
+      if (mode === 'nurse_p') {
+        label.innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
+        label.className = 'text-indigo-600';
+        // ตั้งค่าอัตรากำลังตามเงื่อนไข (พิเศษปาริฉัตร) [cite: 45]
+        document.getElementById('q_wd_r_n').value = 1; document.getElementById('q_wd_r_m').value = 2; document.getElementById('q_wd_r_a').value = 1;
+        document.getElementById('q_wd_s_n').value = 1; document.getElementById('q_wd_s_m').value = 1; document.getElementById('q_wd_s_a').value = 1;
+        document.getElementById('q_hd_r_n').value = 1; document.getElementById('q_hd_r_m').value = 1; document.getElementById('q_hd_r_a').value = 1;
+        document.getElementById('q_hd_s_n').value = 1; document.getElementById('q_hd_s_m').value = 1; document.getElementById('q_hd_s_a').value = 1;
+      } else if (mode === 'nurse_m') {
+        label.innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)';
+        label.className = 'text-amber-600';
+        // ตั้งค่าอัตรากำลังตามเงื่อนไข (สงฆ์อาพาธ) [cite: 45]
+        document.getElementById('q_wd_r_n').value = 1; document.getElementById('q_wd_r_m').value = 1; document.getElementById('q_wd_r_a').value = 1;
+        document.getElementById('q_wd_s_n').value = 1; document.getElementById('q_wd_s_m').value = 1; document.getElementById('q_wd_s_a').value = 1;
+        document.getElementById('q_hd_r_n').value = 1; document.getElementById('q_hd_r_m').value = 1; document.getElementById('q_hd_r_a').value = 1;
         document.getElementById('q_hd_s_n').value = 1; document.getElementById('q_hd_s_m').value = 1; document.getElementById('q_hd_s_a').value = 1;
       } else {
+        label.innerText = 'พนักงานช่วยเหลือคนไข้';
+        label.className = 'text-blue-600';
+        // ค่าเริ่มต้นเดิมสำหรับพนักงานช่วยเหลือคนไข้ [cite: 45]
         document.getElementById('q_wd_r_n').value = 1; document.getElementById('q_wd_r_m').value = 3; document.getElementById('q_wd_r_a').value = 1;
         document.getElementById('q_wd_s_n').value = 1; document.getElementById('q_wd_s_m').value = 0; document.getElementById('q_wd_s_a').value = 1;
         document.getElementById('q_hd_r_n').value = 1; document.getElementById('q_hd_r_m').value = 1; document.getElementById('q_hd_r_a').value = 1;
         document.getElementById('q_hd_s_n').value = 1; document.getElementById('q_hd_s_m').value = 1; document.getElementById('q_hd_s_a').value = 1;
       }
-      populateSelectors(); initSortable(); refresh(); 
-      const label = (mode === 'nurse') ? 'พยาบาลวิชาชีพ' : 'พนักงานช่วยเหลือคนไข้'; document.getElementById('role-label').innerText = label; 
+      
+      populateSelectors(); 
+      initSortable(); 
+      refresh(); 
     }
 
     function switchTab(id) {
@@ -492,18 +528,62 @@
     }
 
     async function handleMonthYearChange() {
-      const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); if(!mIn || !yIn) return;
-      const m = mIn.value, y = yIn.value; document.getElementById('sub-header').innerHTML = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และสงฆ์อาพาธ | ประจำเดือน ${mNames[m]} พ.ศ. ${parseInt(y)+543}`;
+      const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
+      if(!mIn || !yIn) return;
+      
+      const m = parseInt(mIn.value); // เดือนที่เลือก (0-11)
+      const y = parseInt(yIn.value); // ปี ค.ศ.
+      const yearBE = y + 543; // ปี พ.ศ. ของเดือนที่จัดเวร
+      
+      // 1. ปรับปรุงชื่อเรื่องตาราง (Table Title)
+      document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่......../${yearBE}`;
+      
+      // 2. คำนวณเดือนย้อนหลัง 1 เดือน สำหรับ "ลงวันที่"
+      // หากเป็นเดือนมกราคม (0) เดือนก่อนหน้าจะเป็นธันวาคม (11) และปี พ.ศ. จะลดลง 1 ปี
+      const prevMonthIdx = (m === 0) ? 11 : m - 1;
+      const prevMonthYearBE = (m === 0) ? yearBE - 1 : yearBE;
+      const issuedDateLine = `ลงวันที่.......... เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}`;
+      
+      // 3. กำหนดข้อความ "สำหรับงาน..." ตามโหมดการใช้งาน (currentGroup)
+      let modeSubtitle = "";
+      const commonSuffix = "กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรมกลุ่มการพยาบาล";
+      const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
+      
+      if (currentGroup === 'nurse_p') {
+        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร ${commonSuffix} ${monthYearText}`;
+      } else if (currentGroup === 'nurse_m') {
+        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+      } else {
+        // โหมดพนักงานช่วยเหลือคนไข้ (asst)
+        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+      }
+      
+      // 4. แสดงผลที่ sub-header (บรรทัดลงวันที่ และ บรรทัดรายละเอียดงาน)
+      document.getElementById('sub-header').innerHTML = `${issuedDateLine}<br>${modeSubtitle}`;
+      
+      // --- ส่วนการโหลดข้อมูลเดิม (คงไว้ตามระบบเดิม) ---
       await refresh(false); 
       const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
+      
       if (savedData && savedData.schedule) { 
-        activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
-        currentSchedule = savedData.schedule; currentTargets = savedData.targets || []; currentWorkDays = savedData.workDays || 0; isFinished = savedData.isFinished || false; 
+        // ถ้ามีข้อมูลที่บันทึกไว้แล้ว ให้ใช้ลำดับรายชื่อเดิม
+        activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) 
+          ? savedData.staffOrder 
+          : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
+          
+        currentSchedule = savedData.schedule; 
+        currentTargets = savedData.targets || []; 
+        currentWorkDays = savedData.workDays || 0; 
+        isFinished = savedData.isFinished || false; 
       } else { 
+        // ถ้าไม่มีข้อมูล ให้ดึงรายชื่อใหม่จากฐานข้อมูล Staff เฉพาะกลุ่ม "หลัก"
         activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
-        currentSchedule = constructInitialDraft(m, y, activeStaffOrder); isFinished = false; 
+        currentSchedule = constructInitialDraft(m, y, activeStaffOrder); 
+        isFinished = false; 
       }
-      updateWorkDayCount(); renderTable();
+      
+      updateWorkDayCount(); 
+      renderTable();
     }
 
     function updateUI() {
