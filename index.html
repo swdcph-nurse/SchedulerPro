@@ -415,119 +415,135 @@
      * ปรับปรุง: ไม่นับ vac ในผลรวม, รองรับคอลัมน์สถิติที่กว้างขึ้น และคำนวณยอดรวมรายวันได้ถูกต้อง
      */
     function renderTable() {
-      const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'), head = document.getElementById('dutyHead'), body = document.getElementById('dutyBody');
-      if(!mIn || !yIn || !head || !body) return;
-      
-      const m = parseInt(mIn.value);
-      const y = parseInt(yIn.value);
-      head.innerHTML = ""; 
-      body.innerHTML = "";
-      
-      const daysInMonth = new Date(y, m + 1, 0).getDate();
-      // ตัวเก็บสถิติรายวัน (ดึก, เช้า, บ่าย, และรวมทั้งหมด)
-      const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
-      
-      // 1. สร้างส่วนหัวของตาราง (Header Rows)
-      let h1 = `<tr>
-        <th class="sticky-col-1" rowspan="2">#</th>
-        <th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th>
-        <th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
-      let h2 = `<tr>`;
+  const mIn = document.getElementById('runMonth'), 
+        yIn = document.getElementById('runYear'), 
+        head = document.getElementById('dutyHead'), 
+        body = document.getElementById('dutyBody');
+        
+  if(!mIn || !yIn || !head || !body) return;
+  
+  const m = parseInt(mIn.value);
+  const y = parseInt(yIn.value);
+  head.innerHTML = ""; 
+  body.innerHTML = "";
+  
+  // คำนวณจำนวนวันในเดือนนั้นๆ [cite: 40]
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  
+  // ตัวเก็บสถิติผลรวมรายวันสำหรับแถวท้ายตาราง
+  const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
+  
+  // 1. การสร้าง Header ของตาราง (2 แถว: วันที่ และ ชื่อวัน)
+  let h1 = `<tr>
+    <th class="sticky-col-1" rowspan="2">#</th>
+    <th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th>
+    <th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
+  let h2 = `<tr>`;
 
-      for(let d=1; d<=daysInMonth; d++) { 
-        const dObj = new Date(y, m, d);
-        const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
-        h1 += `<th class="col-day ${isH ? 'bg-holiday text-rose-500' : ''}">${d}</th>`; 
-        h2 += `<th class="col-day ${isH ? 'bg-holiday text-rose-500 text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
+  for(let d = 1; d <= daysInMonth; d++) { 
+    const dObj = new Date(y, m, d);
+    // ตรวจสอบวันหยุดเสาร์-อาทิตย์ หรือวันหยุดพิเศษที่เลือกไว้ [cite: 44]
+    const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
+                 Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
+    
+    h1 += `<th class="col-day ${isH ? 'bg-holiday text-rose-500' : ''}">${d}</th>`; 
+    h2 += `<th class="col-day ${isH ? 'bg-holiday text-rose-500 text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
+  }
+  
+  // หัวข้อคอลัมน์สถิติสะสม [cite: 13]
+  h1 += `<th colspan="5" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th><th class="col-total" rowspan="2">รวม</th><th class="col-supp" rowspan="2">เสริม</th></tr>`;
+  h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th></tr>`;
+  head.innerHTML = h1 + h2;
+
+  // 2. การสร้างแถวข้อมูลเจ้าหน้าที่รายคน
+  activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
+    const staffInfo = appData.staff.find(s => s[0].trim() === name) || [name, "N/A", "หลัก"];
+    let row = `<tr data-name="${name}">
+      <td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td>
+      <td class="sticky-col-2 font-bold truncate group">
+        <div class="flex items-center">
+          <span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>
+          ${name}
+        </div>
+      </td>
+      <td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
+    
+    // ตัวแปรนับสถิติรายบุคคล
+    let c = { d:0, m:0, a:0, v:0, t:0, total:0, supp:0 };
+    
+    for(let d = 1; d <= daysInMonth; d++) {
+      const dayIdx = d - 1;
+      const assign = currentSchedule[dayIdx]?.assignments.find(a => a.name.trim() === name); 
+      let val = (assign ? assign.type : "x").trim();
+      
+      // ล้างค่าหากเป็นค่าว่างหรือค่าเริ่มต้น [cite: 13, 22]
+      if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
+
+      // นับจำนวนเวรรายผลัดเพื่อแสดงในช่องสถิติ ด ช บ
+      if (val.includes('ด')) { c.d++; dStats[dayIdx]['ด']++; } 
+      if (val.includes('ช')) { c.m++; dStats[dayIdx]['ช']++; } 
+      if (val.includes('บ')) { c.a++; dStats[dayIdx]['บ']++; }
+      
+      // นับเวรพักผ่อน (V) และ อบรม (อ) 
+      if (val.toLowerCase() === 'vac') { c.v++; } 
+      if (val.includes('อบรม')) { c.t++; }
+      
+      // นับเวรเสริม (เครื่องหมาย *) [cite: 53]
+      c.supp += (val.match(/\*/g) || []).length; 
+
+      /**
+       * คำนวณยอดรวมปฏิบัติงาน (ช่อง 'รวม' สีน้ำเงิน)
+       * เงื่อนไข: นับ ด, ช, บ และ อบรม (นับเวรควบ เช่น ดบ = 2) แต่ไม่นับ 'vac' และ 'x' 
+       */
+      if (val !== 'x' && val.toLowerCase() !== 'vac') {
+        const workload = (val.includes('ด')?1:0) + (val.includes('ช')?1:0) + (val.includes('บ')?1:0) + (val.includes('อบรม')?1:0);
+        c.total += workload;
+        dStats[dayIdx]['total'] += workload; // ยอดรวมรายวันท้ายตาราง
       }
-      
-      // ส่วนหัวของคอลัมน์สถิติ (ขยายความกว้างผ่านคลาส col-stat ใน CSS)
-      h1 += `<th colspan="5" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th><th class="col-total" rowspan="2">รวม</th><th class="col-supp" rowspan="2">เสริม</th></tr>`;
-      h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th></tr>`;
-      head.innerHTML = h1 + h2;
 
-      // 2. สร้างแถวข้อมูลเจ้าหน้าที่ (Staff Rows)
-      activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
-        const staffInfo = appData.staff.find(s => s[0].trim() === name) || [name, "N/A", "หลัก"];
-        let row = `<tr data-name="${name}">
-          <td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td>
-          <td class="sticky-col-2 font-bold truncate group">
-            <div class="flex items-center">
-              <span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>
-              ${name}
-            </div>
-          </td>
-          <td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
-        
-        let c = { d:0, m:0, a:0, v:0, t:0, total:0, supp:0 };
-        
-        for(let d=1; d<=daysInMonth; d++) {
-          const dayIdx = d - 1;
-          const assign = currentSchedule[dayIdx]?.assignments.find(a => a.name.trim() === name); 
-          let val = (assign ? assign.type : "x").trim();
-          
-          if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
-
-          // นับสถิติรายคน และรายวัน
-          if (val.includes('ด')) { c.d++; dStats[dayIdx]['ด']++; } 
-          if (val.includes('ช')) { c.m++; dStats[dayIdx]['ช']++; } 
-          if (val.includes('บ')) { c.a++; dStats[dayIdx]['บ']++; }
-          if (val.toLowerCase() === 'vac') { c.v++; } // นับวันลา (V) แต่ไม่นับรวมในผลรวมเวรทำงาน
-          if (val.includes('อบรม')) { c.t++; }
-          
-          c.supp += (val.match(/\*/g) || []).length; // นับเวรเสริม (*)
-
-          // คำนวณยอดรวมปฏิบัติงาน: นับ ด, ช, บ, อบรม แต่ไม่นับ x และ vac
-          if (!['x','',' '].includes(val.toLowerCase()) && val.toLowerCase() !== 'vac') {
-            const workload = (val.includes('ด')?1:0) + (val.includes('ช')?1:0) + (val.includes('บ')?1:0) + (val.includes('อบรม')?1:0);
-            c.total += workload;
-            dStats[dayIdx]['total'] += workload;
-          }
-
-          let cl = getShiftColorClass(val);
-          row += `<td class="col-day ${assign?.isBooked ? 'cell-booked' : ''}">
-            <select class="select-shift ${cl}" onchange="handleShiftChange('${name}', ${dayIdx}, this)">`;
-          ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม"].forEach(opt => {
-            row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`;
-          });
-          row += `</select></td>`;
-        }
-
-        // แสดงผลลัพธ์สถิติรายแถว
-        row += `
-          <td class="col-stat font-bold text-slate-700">${c.d}</td>
-          <td class="col-stat font-bold text-slate-700">${c.m}</td>
-          <td class="col-stat font-bold text-slate-700">${c.a}</td>
-          <td class="col-stat font-bold text-slate-500">${c.v}</td>
-          <td class="col-stat font-bold text-slate-500">${c.t}</td>
-          <td class="col-total font-black text-blue-800">${c.total}</td>
-          <td class="col-supp font-black text-orange-700">${c.supp}</td>
-        </tr>`;
-        body.innerHTML += row;
+      let cl = getShiftColorClass(val);
+      row += `<td class="col-day ${assign?.isBooked ? 'cell-booked' : ''}">
+        <select class="select-shift ${cl}" onchange="handleShiftChange('${name}', ${dayIdx}, this)">`;
+      ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม"].forEach(opt => {
+        row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`;
       });
-      
-      // 3. สร้างแถวสรุปผลลัพธ์รายวัน (Summary Rows - ด, ช, บ, รวม)
-      ['ด','ช','บ','total'].forEach(type => {
-        let label = (type === 'total' ? 'รวม' : 'ผลัด ' + type);
-        let fRow = `<tr class="summary-row">
-          <td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
-        
-        for(let d=0; d<daysInMonth; d++) { 
-          const val = dStats[d][type];
-          // ดึงเป้าหมาย (Targets) เพื่อเปรียบเทียบสี
-          const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
-          
-          const cl = val < target ? "text-rose-600 font-bold" : (val > target ? "text-amber-600 font-bold" : (type === 'total' ? "text-blue-700 font-bold" : "text-emerald-600 font-bold")); 
-          fRow += `<td class="${cl}">${val}</td>`; 
-        }
-        fRow += `<td colspan="7" class="bg-slate-50"></td></tr>`; 
-        body.innerHTML += fRow;
-      });
-
-      // เริ่มต้นระบบลากวางสลับแถวใหม่
-      initTableSortable();
+      row += `</select></td>`;
     }
 
+    // ใส่ข้อมูลสถิติที่คำนวณได้ลงท้ายแถว
+    row += `
+      <td class="col-stat font-bold text-slate-700">${c.d}</td>
+      <td class="col-stat font-bold text-slate-700">${c.m}</td>
+      <td class="col-stat font-bold text-slate-700">${c.a}</td>
+      <td class="col-stat font-bold text-slate-500">${c.v}</td>
+      <td class="col-stat font-bold text-slate-500">${c.t}</td>
+      <td class="col-total font-black text-blue-800">${c.total}</td>
+      <td class="col-supp font-black text-orange-700">${c.supp}</td>
+    </tr>`;
+    body.innerHTML += row;
+  });
+  
+  // 3. การสร้างแถวสรุปผลรวมรายวัน (ดึก, เช้า, บ่าย, รวมทั้งหมด)
+  ['ด','ช','บ','total'].forEach(type => {
+    let label = (type === 'total' ? 'รวม' : 'ผลัด ' + type);
+    let fRow = `<tr class="summary-row">
+      <td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
+    
+    for(let d = 0; d < daysInMonth; d++) { 
+      const val = dStats[d][type];
+      // ดึงค่าเป้าหมายอัตรากำลัง (Targets) มาเปรียบเทียบสี [cite: 45, 46]
+      const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
+      
+      const cl = val < target ? "text-rose-600 font-bold" : (val > target ? "text-amber-600 font-bold" : (type === 'total' ? "text-blue-700 font-bold" : "text-emerald-600 font-bold")); 
+      fRow += `<td class="${cl}">${val}</td>`; 
+    }
+    fRow += `<td colspan="7" class="bg-slate-50"></td></tr>`; 
+    body.innerHTML += fRow;
+  });
+
+  // เรียกใช้ระบบ Sortable สำหรับลากวางชื่อ [cite: 33]
+  initTableSortable();
+}
     // --- 4. API & SYSTEM LOGIC ---
 
     async function callAPI(action, method = 'POST', data = {}) {
