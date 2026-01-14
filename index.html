@@ -27,27 +27,22 @@
       max-width: 100%; max-height: 75vh; position: relative; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
     }
     /* ปรับปรุงพื้นฐานตารางให้ขยายเต็มพื้นที่ไว้ก่อน */
+    /* --- กลับมาใช้ค่าเริ่มต้นของตาราง --- */
     .table-official { 
       border-collapse: separate; 
       border-spacing: 0; 
-      width: 100%; /* เปลี่ยนจาก auto เป็น 100% เพื่อให้เต็มพื้นที่ */
+      width: auto; /* กลับมาใช้ auto เพื่อให้ขนาดตามเนื้อหาเดิม */
       table-layout: fixed; 
-      transition: all 0.3s ease; /* เพิ่มความสมูทตอนย่อขยาย */
-      font-size: 11px; /* ขนาดปกติ */
+      font-size: 14px; /* ขนาดเดิม */
+      transition: none; /* ปิด transition เพื่อให้ Sticky ทำงานแม่นยำ */
     }
 
-    /* --- ส่วนที่เพิ่ม: ฟังก์ชันขยายตารางให้ใหญ่ขึ้น --- */
+    /* --- ส่วนที่ทำให้ปุ่มขยายใช้งานได้จริง --- */
     .table-expanded {
-      width: max-content !important; /* ให้ตารางกว้างตามขนาดเนื้อหาที่ขยายออก */
-      min-width: 100%;
-      font-size: 14px !important; /* ขยายตัวอักษรในตาราง */
+      font-size: 16px !important; /* ขยายตัวอักษร */
     }
 
-    .table-expanded th, .table-expanded td {
-      height: 48px !important; /* เพิ่มความสูงเซลล์ */
-    }
-
-    /* ขยายความกว้างคอลัมน์วันที่และสถิติเมื่อขยาย */
+    /* ปรับขนาดคอลัมน์เมื่อขยาย */
     .table-expanded .col-day, 
     .table-expanded .col-stat, 
     .table-expanded .col-total, 
@@ -56,26 +51,23 @@
       min-width: 45px !important;
     }
 
-    /* ปรับตำแหน่งคอลัมน์ Sticky เมื่อขยาย (ต้องคำนวณระยะ left ใหม่) */
-    .table-expanded .sticky-col-1 { width: 40px !important; min-width: 40px !important; }
+    /* คำนวณตำแหน่ง Sticky ใหม่สำหรับโหมดขยาย เพื่อไม่ให้แถวซ้อนทับกัน */
+    .table-expanded .sticky-col-1 { width: 35px !important; min-width: 35px !important; }
     .table-expanded .sticky-col-2 { 
-      left: 40px !important; /* ขยับตามความกว้าง col-1 */
-      width: 220px !important; 
-      min-width: 220px !important; 
+      left: 35px !important; 
+      width: 200px !important; 
+      min-width: 200px !important; 
     }
     .table-expanded .sticky-col-3 { 
-      left: 260px !important; /* 40 + 220 */
-      width: 110px !important; 
-      min-width: 110px !important; 
+      left: 235px !important; /* 35 + 200 */
+      width: 100px !important; 
+      min-width: 100px !important; 
     }
 
-    /* ปรับระยะ Top ของ Header เมื่อขยายตาราง */
-    .table-expanded thead tr:nth-child(2) th { top: 48px; }
-
-    /* Strict 32px Columns for Data, Stats, Total, and Supp */
-    .col-day, .col-stat, .col-total, .col-supp { width: 32px !important; min-width: 32px !important; max-width: 32px !important; }
-    .col-total { background: #eff6ff !important; border-left: 1.5px solid #3b82f6 !important; }
-    .col-supp { background: #fff7ed !important; }
+    /* ปรับความสูงหัวตารางเมื่อขยาย */
+    .table-expanded thead tr:nth-child(1) th { height: 40px; }
+    .table-expanded thead tr:nth-child(2) th { height: 40px; top: 40px; }
+    .table-expanded td { height: 40px !important; }
 
     /* Sticky Columns Configuration - Offset calculated for 32px # col */
     .sticky-col-1 { position: sticky; left: 0; z-index: 60; background: #ffffff !important; width: 32px !important; min-width: 32px !important; box-shadow: inset -1px 0 0 #e2e8f0; }
@@ -570,7 +562,19 @@
       }
     }
 
-    async function toggleTableSize(expand) { const table = document.getElementById('mainTable'); if (expand) table.classList.add('table-expanded'); else table.classList.remove('table-expanded'); }
+    async function toggleTableSize(expand) { 
+      const table = document.getElementById('mainTable'); 
+      if (!table) return;
+
+      if (expand) {
+        table.classList.add('table-expanded'); 
+      } else {
+        table.classList.remove('table-expanded'); 
+      }
+      
+      // สำคัญ: ต้อง renderTable ใหม่เพื่อให้ค่าตำแหน่ง Left ของคอลัมน์ที่ล็อกไว้ถูกคำนวณใหม่
+      renderTable(); 
+    }
     async function clearScheduleUI() { if(await Swal.fire({ title: 'ล้างข้อมูลตาราง?', text: "เวรที่ระบุไว้ในตารางจะถูกเปลี่ยนเป็น x ทั้งหมด", icon: 'warning', showCancelButton: true }).then(r=>r.isConfirmed)) { currentSchedule.forEach(day => day.assignments.forEach(a => { if(!a.isBooked) a.type = 'x'; })); renderTable(); }}
     function initTableSortable() { const el = document.getElementById('dutyBody'); if (sortableTable) sortableTable.destroy(); sortableTable = new Sortable(el, { handle: '.row-drag-handle', animation: 150, onEnd: () => { activeStaffOrder = Array.from(document.querySelectorAll('#dutyBody > tr[data-name]')).map(tr => tr.getAttribute('data-name')); } }); }
     function handleMonthChange(tab) { if (tab === 'booking') renderCalendar(); else if (tab === 'schedule') handleMonthYearChange(); }
