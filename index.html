@@ -497,160 +497,97 @@ function renderTable() {
   
   const m = parseInt(mIn.value);
   const y = parseInt(yIn.value);
-  head.innerHTML = ""; 
-  body.innerHTML = "";
+  head.innerHTML = ""; body.innerHTML = "";
   
   const daysInMonth = new Date(y, m + 1, 0).getDate();
-  // ตัวเก็บสถิติอัตรากำลังรายวัน (ไม่นับ อบรม และ R)
   const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
-  
   const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
   
-  // 1. สร้าง Header ตาราง
-  let h1 = `<tr>
-    <th class="sticky-col-1" rowspan="2">#</th>
-    <th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th>
-    <th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
+  let h1 = `<tr><th class="sticky-col-1" rowspan="2">#</th><th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th><th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
   let h2 = `<tr>`;
 
   for(let d = 1; d <= daysInMonth; d++) { 
     const dObj = new Date(y, m, d);
-    const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
-                 Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
-    
-    // ไฮไลต์สีทึบที่หัววันที่หากเป็นวันหยุด
+    const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
     h1 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${d}</th>`; 
     h2 += `<th class="col-day ${isH ? 'bg-holiday text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
   }
   
-  // ช่องสถิติย่อย (ด ช บ V อ R) จะใช้คลาส col-stat ซึ่งมีความกว้างเท่ากับช่องวันที่
-  h1 += `<th colspan="6" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th>
-         <th class="col-total" rowspan="2">รวม</th>
-         <th class="col-supp" rowspan="2">${suppColumnName}</th></tr>`;
-  h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th>
-         <th class="col-stat">V</th><th class="col-stat">อ</th><th class="col-stat">R</th></tr>`;
+  h1 += `<th colspan="6" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th><th class="col-total" rowspan="2">รวม</th><th class="col-supp" rowspan="2">${suppColumnName}</th></tr>`;
+  h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th><th class="col-stat">R</th></tr>`;
   head.innerHTML = h1 + h2;
 
-  // 2. สร้างแถวข้อมูลรายคน
   activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
-    const staffInfo = appData.staff.find(s => s[0].trim() === name) || [name, "N/A", "หลัก"];
-    let row = `<tr data-name="${name}">
-      <td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td>
-      <td class="sticky-col-2 font-bold truncate group">
-        <div class="flex items-center">
-          <span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>
-          ${name}
-        </div>
-      </td>
-      <td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
+    const staffInfo = appData.staff.find(s => s[0].trim() === name.trim()) || [name, "N/A", "หลัก"];
+    let row = `<tr data-name="${name}"><td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td><td class="sticky-col-2 font-bold truncate group"><div class="flex items-center"><span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>${name}</div></td><td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
     
     let c = { d:0, m:0, a:0, v:0, t:0, r:0, total:0, supp:0 };
     
     for(let d = 1; d <= daysInMonth; d++) {
       const dayIdx = d - 1;
       const dObj = new Date(y, m, d);
-      const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
-                   Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
+      const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
 
       const assign = currentSchedule[dayIdx]?.assignments.find(a => a.name.trim() === name.trim());
       let val = (assign ? assign.type : "x").trim();
       if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
 
-      // --- นับสถิติรายบุคคล (แก้ไข: แยก 'อบรม' ออกจาก 'บ' อย่างชัดเจน) ---
-      if (val === 'อบรม') {
-        c.t++; // นับเฉพาะช่อง อ
-      } else {
+      // นับสถิติรายบุคคล (แยก อบรม ออกจาก บ)
+      if (val === 'อบรม') { c.t++; } 
+      else {
         if (val.includes('ด')) c.d++;
         if (val.includes('ช') || val.includes('ช5')) c.m++;
-        if (val.includes('บ')) c.a++; // จะไม่ถูกนับถ้าค่าเป็น 'อบรม'
+        if (val.includes('บ')) c.a++;
         if (val.toLowerCase() === 'vac') c.v++;
         if (val.includes('R')) c.r++;
       }
       c.supp += (val.match(/\*/g) || []).length;
 
-      // --- นับอัตรากำลังรายวัน (ไม่นับ อบรม, R และ vac) ---
-      let isExcludedFromDaily = (val === 'อบรม' || val.includes('R') || val.toLowerCase() === 'vac' || val === 'x');
-      if (currentGroup === 'nurse_m' && val.includes('*')) isExcludedFromDaily = true;
+      // นับอัตรากำลังรายวัน
+      let isExcluded = (val === 'อบรม' || val.includes('R') || val.toLowerCase() === 'vac' || val === 'x');
+      if (currentGroup === 'nurse_m' && val.includes('*')) isExcluded = true;
 
-      if (!isExcludedFromDaily) {
+      if (!isExcluded) {
         dStats[dayIdx]['ด'] += (val.includes('ด') ? 1 : 0);
         dStats[dayIdx]['ช'] += (val.includes('ช') || val.includes('ช5') ? 1 : 0);
         dStats[dayIdx]['บ'] += (val.includes('บ') ? 1 : 0);
         dStats[dayIdx]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
       }
       
-      // --- ผลรวมเวรรายคน (นับอบรมรวมเป็นวันทำงาน แต่ไม่รวม R และ vac) ---
       if (val !== 'x' && val.toLowerCase() !== 'vac' && !val.includes('R')) {
-        if (val === 'อบรม') {
-          c.total += 1;
-        } else {
-          c.total += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
-        }
+        c.total += (val === 'อบรม') ? 1 : (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
       }
 
-      // ตรวจสอบคลาสสำหรับการแสดงสีพื้นหลังทึบ
-      let cellClass = "col-day";
-      if (isH) cellClass += " bg-holiday";
-      if (assign?.isBooked) cellClass += " cell-booked";
-
-      row += `<td class="${cellClass}">
-        <select class="select-shift ${getShiftColorClass(val)}" onchange="handleShiftChange('${name}', ${dayIdx}, this)">`;
-      
-      const shifts = ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"];
-      
-      shifts.forEach(opt => {
-        // ในตารางเวรให้แสดง 'อ' แทน 'อบรม'
-        const displayText = (opt === "อบรม") ? "อ" : opt; 
-        row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${displayText}</option>`;
+      let cellClass = `col-day ${isH ? 'bg-holiday' : ''} ${assign?.isBooked ? 'cell-booked' : ''}`;
+      row += `<td class="${cellClass}"><select class="select-shift ${getShiftColorClass(val)}" onchange="handleShiftChange('${name}', ${dayIdx}, this)">`;
+      ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"].forEach(opt => {
+        row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${(opt === "อบรม") ? "อ" : opt}</option>`;
       });
-      
       row += `</select></td>`;
     }
 
-    // แสดงผลรวมแบบ งานหลัก/รีเฟอร์ (30/2)
     const totalDisplay = c.r > 0 ? `${c.total}/${c.r}` : `${c.total}`;
-    
-    row += `
-      <td class="col-stat font-bold text-slate-700">${c.d}</td>
-      <td class="col-stat font-bold text-slate-700">${c.m}</td>
-      <td class="col-stat font-bold text-slate-700">${c.a}</td>
-      <td class="col-stat font-bold text-slate-500">${c.v}</td>
-      <td class="col-stat font-bold text-slate-500">${c.t}</td>
-      <td class="col-stat font-bold text-rose-600">${c.r}</td>
-      <td class="col-total font-black text-blue-800">${totalDisplay}</td>
-      <td class="col-supp font-black text-orange-700">${c.supp}</td>
-    </tr>`;
+    row += `<td class="col-stat font-bold text-slate-700">${c.d}</td><td class="col-stat font-bold text-slate-700">${c.m}</td><td class="col-stat font-bold text-slate-700">${c.a}</td><td class="col-stat font-bold text-slate-500">${c.v}</td><td class="col-stat font-bold text-slate-500">${c.t}</td><td class="col-stat font-bold text-rose-600">${c.r}</td><td class="col-total font-black text-blue-800">${totalDisplay}</td><td class="col-supp font-black text-orange-700">${c.supp}</td></tr>`;
     body.innerHTML += row;
   });
   
-  // 3. สร้างแถวสรุปอัตรากำลังรายวัน
+  // สรุปรายวัน
   ['ด','ช','บ','total'].forEach(type => {
     let label = (type === 'total' ? 'รวม' : 'ผลัด ' + type);
-    let fRow = `<tr class="summary-row">
-      <td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
-    
+    let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
     for(let d = 0; d < daysInMonth; d++) { 
       const val = dStats[d][type];
       const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
-      const cl = val < target ? "text-rose-600 font-bold" : (val > target ? "text-amber-600 font-bold" : (type === 'total' ? "text-blue-700 font-bold" : "text-emerald-600 font-bold")); 
-      fRow += `<td class="${cl}">${val}</td>`; 
+      fRow += `<td class="${val < target ? "text-rose-600 font-bold" : "text-emerald-600 font-bold"}">${val}</td>`; 
     }
     fRow += `<td colspan="8" class="bg-slate-50"></td></tr>`; 
     body.innerHTML += fRow;
   });
 
-  // 4. หมายเหตุและ Footer การพิมพ์
   if (!document.getElementById('remark-container')) {
-    const remarkHtml = `
-      <div id="remark-container" class="mt-4">
-        <label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label>
-        <textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea>
-        <div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; font-size: 11pt; color: black; text-align: left;"></div>
-        <div id="print-footer-info" class="print-footer" style="display:none; font-family: 'Sarabun', sans-serif;"></div>
-      </div>`;
+    const remarkHtml = `<div id="remark-container" class="mt-4"><label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label><textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea><div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; color: black; text-align: left;"></div><div id="print-footer-info" class="print-footer" style="display:none; font-family: 'Sarabun', sans-serif;"></div></div>`;
     document.querySelector('.table-container').insertAdjacentHTML('afterend', remarkHtml);
   }
-  
   initTableSortable();
 }
     // --- 4. API & SYSTEM LOGIC ---
@@ -685,45 +622,59 @@ function renderTable() {
   const loader = document.createElement('div');
   loader.id = 'table-loader';
   loader.className = 'table-loading-overlay';
-  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังดึงข้อมูลเวรจากเซิร์ฟเวอร์...</p></div>';
+  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังดึงข้อมูลเวร...</p></div>';
   container.appendChild(loader);
 
   try {
     const m = parseInt(mIn.value), y = parseInt(yIn.value), yearBE = y + 543;
-    
-    // 1. ดึงรายชื่อพนักงานปัจจุบันก่อน
+    const prevMonthIdx = (m === 0) ? 11 : m - 1;
+    const prevMonthYearBE = (m === 0) ? yearBE - 1 : yearBE;
+
+    // 1. ดึงข้อมูลรายชื่อปัจจุบันก่อน
     await refresh(false); 
     
-    // 2. ดึงข้อมูลตารางเวรที่บันทึกไว้
+    // 2. ดึงข้อมูลตารางเวรจากฐานข้อมูล
     const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
 
-    // 3. จัดการหัวเรื่องและหมายเหตุ (โค้ดส่วนเดิมของคุณ)
-    // ... (ส่วนตั้งค่า orderNum, issuedDate, table-title) ...
+    // 3. ตั้งค่าหัวเรื่อง (แบบพิมพ์แก้ไขได้)
+    const currentOrder = (savedData && savedData.orderNum) ? savedData.orderNum : "........";
+    document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="${currentOrder}">/${yearBE}`;
 
+    const currentDate = (savedData && savedData.issuedDate) ? savedData.issuedDate : "..........";
+    const commonSuffix = "กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรมกลุ่มการพยาบาล";
+    const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
+    
+    let modeSubtitle = (currentGroup === 'nurse_p') ? `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร ${commonSuffix} ${monthYearText}` :
+                       (currentGroup === 'nurse_m') ? `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}` :
+                       `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+
+    document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value="${currentDate}"> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>${modeSubtitle}`;
+
+    // 4. จัดการหมายเหตุ (ต้องแสดงค่าเริ่มต้นถ้าไม่มีข้อมูลบันทึก)
+    const remarkBox = document.getElementById('scheduleRemark');
+    if (remarkBox) {
+      remarkBox.value = (savedData && savedData.remark && savedData.remark.trim() !== "") ? savedData.remark : getDefaultRemark();
+      syncPrintRemark(remarkBox.value);
+    }
+
+    // 5. โหลดตารางเวร
     if (savedData && savedData.schedule && savedData.schedule.length > 0) { 
-      // กรณีมีข้อมูลที่บันทึกไว้: ให้ใช้ลำดับรายชื่อจากข้อมูลที่บันทึก
-      if (savedData.staffOrder && savedData.staffOrder.length > 0) {
-        activeStaffOrder = savedData.staffOrder;
-      } else {
-        // กรณีไม่มี staffOrder ให้ดึงจากชื่อที่มีอยู่ใน schedule
-        activeStaffOrder = savedData.schedule[0].assignments.map(a => a.name.trim());
-      }
+      // ใช้ลำดับรายชื่อตามที่บันทึกไว้ในเดือนนั้นๆ
+      activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
       currentSchedule = savedData.schedule; 
       currentTargets = savedData.targets || []; 
       currentWorkDays = savedData.workDays || 0; 
       isFinished = savedData.isFinished || false; 
     } else { 
-      // กรณีไม่มีข้อมูลบันทึก: สร้างตารางร่างใหม่ตามรายชื่อกลุ่ม "หลัก"
+      // กรณีไม่มีข้อมูลบันทึก ให้สร้างตารางร่างใหม่
       activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
       currentSchedule = constructInitialDraft(m, y, activeStaffOrder); 
       isFinished = false;
     }
     
     updateWorkDayCount(); 
-    renderTable(); // วาดตารางใหม่
+    renderTable();
     
-  } catch (err) {
-    Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลได้: ' + err, 'error');
   } finally {
     if(document.getElementById('table-loader')) document.getElementById('table-loader').remove();
   }
