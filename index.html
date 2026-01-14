@@ -81,8 +81,22 @@
       .col-total, .col-supp { width: 35px !important; }
       
       .table-official th, .table-official td { border: 0.5pt solid black !important; color: black !important; padding: 1pt !important; height: auto !important; background: white !important; }
-      .bg-holiday { background-color: #fecaca !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .cell-booked { background-color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .bg-holiday { 
+        background-color: #fecaca !important; 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+        color: #991b1b !important;
+      }
+      .cell-booked { 
+        background-color: #bfdbfe !important; 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+        color: #1e40af !important;
+      }
+      
+      /* ให้ตัวหนังสือใน Select ชัดเจนตอนพิมพ์ */
+      .select-shift { color: black !important; font-weight: 800 !important; }
+    }
       
       .sticky-col-1, .sticky-col-2, .sticky-col-3, thead th { position: static !important; box-shadow: none !important; }
       #printRemarkDisplay { display: block !important; width: 100% !important; white-space: pre-wrap !important; font-size: 10pt !important; margin-top: 10px !important; text-align: left !important; color: black !important; }
@@ -501,9 +515,9 @@ function renderTable() {
   
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
-  const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
+  const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม"; [cite: 2]
   
-  // 1. สร้าง Header (กู้คืนขนาดคอลัมน์และสีทึบ)
+  // 1. สร้าง Header ตาราง
   let h1 = `<tr><th class="sticky-col-1" rowspan="2">#</th><th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th><th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
   let h2 = `<tr>`;
   for(let d = 1; d <= daysInMonth; d++) { 
@@ -516,7 +530,7 @@ function renderTable() {
   h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th><th class="col-stat">R</th></tr>`;
   head.innerHTML = h1 + h2;
 
-  // 2. สร้างแถวข้อมูล (ดึงรายชื่อตาม activeStaffOrder ที่โหลดมาจากฐานข้อมูลล่าสุด)
+  // 2. สร้างแถวข้อมูลพนักงาน
   activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
     const staffInfo = appData.staff.find(s => s[0].trim() === name.trim()) || [name, "N/A", "หลัก"];
     let row = `<tr data-name="${name}"><td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td><td class="sticky-col-2 font-bold truncate group"><div class="flex items-center"><span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>${name}</div></td><td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
@@ -532,12 +546,10 @@ function renderTable() {
       let val = (assign ? assign.type : "x").trim();
       if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
 
-      // --- นับสถิติรายบุคคล (แก้ไขให้ ชR บR ดR นับเข้าเฉพาะช่อง R เท่านั้น) ---
-      if (val === 'อบรม') { 
-        c.t++; 
-      } else if (val.includes('R')) {
-        c.r++; // นับเข้าช่อง R อย่างเดียว ตามที่แจ้งล่าสุด
-      } else {
+      // --- นับสถิติรายบุคคล (สะสมตามปกติ) --- 
+      if (val === 'อบรม') { c.t++; } 
+      else if (val.includes('R')) { c.r++; } 
+      else {
         if (val.includes('ด')) c.d++;
         if (val.includes('ช') || val.includes('ช5')) c.m++;
         if (val.includes('บ')) c.a++;
@@ -545,18 +557,29 @@ function renderTable() {
       }
       c.supp += (val.match(/\*/g) || []).length;
 
-      // --- นับอัตรากำลังรายวัน (อบรม และตระกูล R ไม่นับเป็นอัตรากำลัง) ---
+      // --- ส่วนที่แก้ไข: การนับอัตรากำลังรายวัน (dStats) สำหรับสงฆ์อาพาธ --- 
       let isExcluded = (val === 'อบรม' || val.includes('R') || val.toLowerCase() === 'vac' || val === 'x');
-      if (currentGroup === 'nurse_m' && val.includes('*')) isExcluded = true;
 
       if (!isExcluded) {
-        dStats[dayIdx]['ด'] += (val.includes('ด') ? 1 : 0);
-        dStats[dayIdx]['ช'] += (val.includes('ช') || val.includes('ช5') ? 1 : 0);
-        dStats[dayIdx]['บ'] += (val.includes('บ') ? 1 : 0);
-        dStats[dayIdx]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
+        if (currentGroup === 'nurse_m') {
+          // ถ้าเป็นสงฆ์อาพาธ: นับเฉพาะผลัดที่ไม่มีเครื่องหมาย '*' ต่อท้าย
+          const hasRealNight = val.includes('ด') && !val.includes('ด*');
+          const hasRealMorning = (val.includes('ช') || val.includes('ช5')) && !val.includes('ช*');
+          const hasRealAfternoon = val.includes('บ') && !val.includes('บ*');
+
+          if (hasRealNight) { dStats[dayIdx]['ด']++; dStats[dayIdx]['total']++; }
+          if (hasRealMorning) { dStats[dayIdx]['ช']++; dStats[dayIdx]['total']++; }
+          if (hasRealAfternoon) { dStats[dayIdx]['บ']++; dStats[dayIdx]['total']++; }
+        } else {
+          // โหมดอื่นๆ: นับตามปกติ
+          dStats[dayIdx]['ด'] += (val.includes('ด') ? 1 : 0);
+          dStats[dayIdx]['ช'] += (val.includes('ช') || val.includes('ช5') ? 1 : 0);
+          dStats[dayIdx]['บ'] += (val.includes('บ') ? 1 : 0);
+          dStats[dayIdx]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
+        }
       }
       
-      // ผลรวมเวร (รวม อบรม แต่ไม่รวม R ตามโจทย์ 30/2)
+      // ผลรวมเวรรายคน (รวมอบรม แต่ไม่รวม R ตามหลัก 30/2)
       if (val !== 'x' && val.toLowerCase() !== 'vac' && !val.includes('R')) {
         c.total += (val === 'อบรม') ? 1 : (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
       }
@@ -574,7 +597,7 @@ function renderTable() {
     body.innerHTML += row;
   });
   
-  // 3. สรุปรายวัน (Bottom Summary)
+  // 3. ส่วนท้ายตาราง: รวมอัตรากำลังรายวัน
   ['ด','ช','บ','total'].forEach(type => {
     let label = (type === 'total' ? 'รวม' : 'ผลัด ' + type);
     let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
@@ -587,7 +610,7 @@ function renderTable() {
     body.innerHTML += fRow;
   });
 
-  // ส่วนหมายเหตุและ Footer
+  // ส่วนหมายเหตุ และค่าเริ่มต้น
   if (!document.getElementById('remark-container')) {
     const remarkHtml = `<div id="remark-container" class="mt-4"><label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label><textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea><div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; color: black; text-align: left;"></div><div id="print-footer-info" class="print-footer" style="display:none; font-family: 'Sarabun', sans-serif;"></div></div>`;
     document.querySelector('.table-container').insertAdjacentHTML('afterend', remarkHtml);
