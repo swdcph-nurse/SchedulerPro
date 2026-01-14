@@ -503,20 +503,20 @@ function renderTable() {
   const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
   const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
   
+  // 1. สร้าง Header (กู้คืนขนาดคอลัมน์และสีทึบ)
   let h1 = `<tr><th class="sticky-col-1" rowspan="2">#</th><th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th><th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
   let h2 = `<tr>`;
-
   for(let d = 1; d <= daysInMonth; d++) { 
     const dObj = new Date(y, m, d);
     const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
     h1 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${d}</th>`; 
     h2 += `<th class="col-day ${isH ? 'bg-holiday text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
   }
-  
   h1 += `<th colspan="6" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th><th class="col-total" rowspan="2">รวม</th><th class="col-supp" rowspan="2">${suppColumnName}</th></tr>`;
   h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th><th class="col-stat">R</th></tr>`;
   head.innerHTML = h1 + h2;
 
+  // 2. สร้างแถวข้อมูล (ดึงรายชื่อตาม activeStaffOrder ที่โหลดมาจากฐานข้อมูลล่าสุด)
   activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
     const staffInfo = appData.staff.find(s => s[0].trim() === name.trim()) || [name, "N/A", "หลัก"];
     let row = `<tr data-name="${name}"><td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td><td class="sticky-col-2 font-bold truncate group"><div class="flex items-center"><span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>${name}</div></td><td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
@@ -532,18 +532,20 @@ function renderTable() {
       let val = (assign ? assign.type : "x").trim();
       if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
 
-      // นับสถิติรายบุคคล (แยก อบรม ออกจาก บ)
-      if (val === 'อบรม') { c.t++; } 
-      else {
+      // --- นับสถิติรายบุคคล (แก้ไขให้ ชR บR ดR นับเข้าเฉพาะช่อง R เท่านั้น) ---
+      if (val === 'อบรม') { 
+        c.t++; 
+      } else if (val.includes('R')) {
+        c.r++; // นับเข้าช่อง R อย่างเดียว ตามที่แจ้งล่าสุด
+      } else {
         if (val.includes('ด')) c.d++;
         if (val.includes('ช') || val.includes('ช5')) c.m++;
         if (val.includes('บ')) c.a++;
         if (val.toLowerCase() === 'vac') c.v++;
-        if (val.includes('R')) c.r++;
       }
       c.supp += (val.match(/\*/g) || []).length;
 
-      // นับอัตรากำลังรายวัน
+      // --- นับอัตรากำลังรายวัน (อบรม และตระกูล R ไม่นับเป็นอัตรากำลัง) ---
       let isExcluded = (val === 'อบรม' || val.includes('R') || val.toLowerCase() === 'vac' || val === 'x');
       if (currentGroup === 'nurse_m' && val.includes('*')) isExcluded = true;
 
@@ -554,6 +556,7 @@ function renderTable() {
         dStats[dayIdx]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
       }
       
+      // ผลรวมเวร (รวม อบรม แต่ไม่รวม R ตามโจทย์ 30/2)
       if (val !== 'x' && val.toLowerCase() !== 'vac' && !val.includes('R')) {
         c.total += (val === 'อบรม') ? 1 : (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
       }
@@ -571,7 +574,7 @@ function renderTable() {
     body.innerHTML += row;
   });
   
-  // สรุปรายวัน
+  // 3. สรุปรายวัน (Bottom Summary)
   ['ด','ช','บ','total'].forEach(type => {
     let label = (type === 'total' ? 'รวม' : 'ผลัด ' + type);
     let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
@@ -584,6 +587,7 @@ function renderTable() {
     body.innerHTML += fRow;
   });
 
+  // ส่วนหมายเหตุและ Footer
   if (!document.getElementById('remark-container')) {
     const remarkHtml = `<div id="remark-container" class="mt-4"><label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label><textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea><div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; color: black; text-align: left;"></div><div id="print-footer-info" class="print-footer" style="display:none; font-family: 'Sarabun', sans-serif;"></div></div>`;
     document.querySelector('.table-container').insertAdjacentHTML('afterend', remarkHtml);
