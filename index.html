@@ -109,6 +109,30 @@
     .text-nurse-p { color: #4338ca; }
     .text-nurse-m { color: #b45309; }
     .text-asst { color: #1d4ed8; }
+    /* ขยายตัวหนังสือในช่องเวรและนำลูกศรออก */
+    .select-shift { 
+      font-size: 14px !important; 
+      font-weight: 800;
+      appearance: none; 
+      -webkit-appearance: none; 
+      -moz-appearance: none; 
+      text-align: center;
+      cursor: pointer;
+    }
+    
+    /* เพิ่มส่วนสไตล์สำหรับช่องหมายเหตุ */
+    #scheduleRemark {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      font-size: 13px;
+      background-color: #fffbeb;
+      color: #92400e;
+      margin-top: 15px;
+      resize: vertical;
+    }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -414,136 +438,86 @@
      * ฟังก์ชันวาดตารางจัดเวรหลัก
      * ปรับปรุง: ไม่นับ vac ในผลรวม, รองรับคอลัมน์สถิติที่กว้างขึ้น และคำนวณยอดรวมรายวันได้ถูกต้อง
      */
-    function renderTable() {
-  const mIn = document.getElementById('runMonth'), 
-        yIn = document.getElementById('runYear'), 
-        head = document.getElementById('dutyHead'), 
-        body = document.getElementById('dutyBody');
+  function renderTable() {
+    const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'), head = document.getElementById('dutyHead'), body = document.getElementById('dutyBody');
+    if(!mIn || !yIn || !head || !body) return;
+    const m = parseInt(mIn.value), y = parseInt(yIn.value);
+    head.innerHTML = ""; body.innerHTML = "";
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
+    
+    // สร้าง Header
+    let h1 = `<tr><th class="sticky-col-1" rowspan="2">#</th><th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th><th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
+    let h2 = `<tr>`;
+    for(let d=1; d<=daysInMonth; d++) { 
+      const dObj = new Date(y, m, d), isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
+      h1 += `<th class="col-day ${isH ? 'bg-holiday text-rose-500' : ''}">${d}</th>`; 
+      h2 += `<th class="col-day ${isH ? 'bg-holiday text-rose-500 text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
+    }
+    // เพิ่มคอลัมน์ R ต่อจาก อ
+    h1 += `<th colspan="6" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th><th class="col-total" rowspan="2" style="width:60px !important; min-width:60px !important;">รวม</th><th class="col-supp" rowspan="2">เสริม</th></tr>`;
+    h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th><th class="col-stat">R</th></tr>`;
+    head.innerHTML = h1 + h2;
+  
+    activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
+      const staffInfo = appData.staff.find(s => s[0].trim() === name) || [name, "N/A", "หลัก"];
+      let row = `<tr data-name="${name}"><td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td><td class="sticky-col-2 font-bold truncate group"><div class="flex items-center"><span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>${name}</div></td><td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
+      let c = { d:0, m:0, a:0, v:0, t:0, r:0, total:0, supp:0 };
+      
+      for(let d=1; d<=daysInMonth; d++) {
+        const assign = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === name);
+        let val = (assign ? assign.type : "x").trim();
+        if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
+  
+        // นับสถิติรายคน
+        if (val.includes('ด')) c.d++;
+        if (val.includes('ช') || val.includes('ช5')) c.m++;
+        if (val.includes('บ')) c.a++;
+        if (val.toLowerCase() === 'vac') c.v++;
+        if (val === 'อบรม') c.t++;
+        if (val.includes('R')) c.r++;
+        c.supp += (val.match(/\*/g) || []).length;
+  
+        // นับอัตรากำลังรายวัน (อบรม และ R ไม่นับ)
+        if (val !== 'x' && val.toLowerCase() !== 'vac' && val !== 'อบรม' && !val.includes('R')) {
+          dStats[d-1]['ด'] += (val.includes('ด') ? 1 : 0);
+          dStats[d-1]['ช'] += (val.includes('ช') || val.includes('ช5') ? 1 : 0);
+          dStats[d-1]['บ'] += (val.includes('บ') ? 1 : 0);
+          dStats[d-1]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
+        }
         
-  if(!mIn || !yIn || !head || !body) return;
+        // ผลรวมเวรรายคน (รวม อบรม ด้วยแต่ไม่รวม R)
+        if (val !== 'x' && val.toLowerCase() !== 'vac' && !val.includes('R')) {
+          c.total += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0) + (val === 'อบรม' ? 1 : 0);
+        }
   
-  const m = parseInt(mIn.value);
-  const y = parseInt(yIn.value);
-  head.innerHTML = ""; 
-  body.innerHTML = "";
-  
-  // คำนวณจำนวนวันในเดือนนั้นๆ [cite: 40]
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  
-  // ตัวเก็บสถิติผลรวมรายวันสำหรับแถวท้ายตาราง
-  const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
-  
-  // 1. การสร้าง Header ของตาราง (2 แถว: วันที่ และ ชื่อวัน)
-  let h1 = `<tr>
-    <th class="sticky-col-1" rowspan="2">#</th>
-    <th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th>
-    <th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
-  let h2 = `<tr>`;
-
-  for(let d = 1; d <= daysInMonth; d++) { 
-    const dObj = new Date(y, m, d);
-    // ตรวจสอบวันหยุดเสาร์-อาทิตย์ หรือวันหยุดพิเศษที่เลือกไว้ [cite: 44]
-    const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
-                 Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
-    
-    h1 += `<th class="col-day ${isH ? 'bg-holiday text-rose-500' : ''}">${d}</th>`; 
-    h2 += `<th class="col-day ${isH ? 'bg-holiday text-rose-500 text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
-  }
-  
-  // หัวข้อคอลัมน์สถิติสะสม [cite: 13]
-  h1 += `<th colspan="5" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th><th class="col-total" rowspan="2">รวม</th><th class="col-supp" rowspan="2">เสริม</th></tr>`;
-  h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th></tr>`;
-  head.innerHTML = h1 + h2;
-
-  // 2. การสร้างแถวข้อมูลเจ้าหน้าที่รายคน
-  activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
-    const staffInfo = appData.staff.find(s => s[0].trim() === name) || [name, "N/A", "หลัก"];
-    let row = `<tr data-name="${name}">
-      <td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td>
-      <td class="sticky-col-2 font-bold truncate group">
-        <div class="flex items-center">
-          <span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>
-          ${name}
-        </div>
-      </td>
-      <td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
-    
-    // ตัวแปรนับสถิติรายบุคคล
-    let c = { d:0, m:0, a:0, v:0, t:0, total:0, supp:0 };
-    
-    for(let d = 1; d <= daysInMonth; d++) {
-      const dayIdx = d - 1;
-      const assign = currentSchedule[dayIdx]?.assignments.find(a => a.name.trim() === name); 
-      let val = (assign ? assign.type : "x").trim();
-      
-      // ล้างค่าหากเป็นค่าว่างหรือค่าเริ่มต้น [cite: 13, 22]
-      if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
-
-      // นับจำนวนเวรรายผลัดเพื่อแสดงในช่องสถิติ ด ช บ
-      if (val.includes('ด')) { c.d++; dStats[dayIdx]['ด']++; } 
-      if (val.includes('ช')) { c.m++; dStats[dayIdx]['ช']++; } 
-      if (val.includes('บ')) { c.a++; dStats[dayIdx]['บ']++; }
-      
-      // นับเวรพักผ่อน (V) และ อบรม (อ) 
-      if (val.toLowerCase() === 'vac') { c.v++; } 
-      if (val.includes('อบรม')) { c.t++; }
-      
-      // นับเวรเสริม (เครื่องหมาย *) [cite: 53]
-      c.supp += (val.match(/\*/g) || []).length; 
-
-      /**
-       * คำนวณยอดรวมปฏิบัติงาน (ช่อง 'รวม' สีน้ำเงิน)
-       * เงื่อนไข: นับ ด, ช, บ และ อบรม (นับเวรควบ เช่น ดบ = 2) แต่ไม่นับ 'vac' และ 'x' 
-       */
-      if (val !== 'x' && val.toLowerCase() !== 'vac') {
-        const workload = (val.includes('ด')?1:0) + (val.includes('ช')?1:0) + (val.includes('บ')?1:0) + (val.includes('อบรม')?1:0);
-        c.total += workload;
-        dStats[dayIdx]['total'] += workload; // ยอดรวมรายวันท้ายตาราง
+        row += `<td class="col-day ${assign?.isBooked ? 'cell-booked' : ''}"><select class="select-shift ${getShiftColorClass(val)}" onchange="handleShiftChange('${name}', ${d-1}, this)">`;
+        ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"].forEach(opt => row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`);
+        row += `</select></td>`;
       }
-
-      let cl = getShiftColorClass(val);
-      row += `<td class="col-day ${assign?.isBooked ? 'cell-booked' : ''}">
-        <select class="select-shift ${cl}" onchange="handleShiftChange('${name}', ${dayIdx}, this)">`;
-      ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม"].forEach(opt => {
-        row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`;
-      });
-      row += `</select></td>`;
-    }
-
-    // ใส่ข้อมูลสถิติที่คำนวณได้ลงท้ายแถว
-    row += `
-      <td class="col-stat font-bold text-slate-700">${c.d}</td>
-      <td class="col-stat font-bold text-slate-700">${c.m}</td>
-      <td class="col-stat font-bold text-slate-700">${c.a}</td>
-      <td class="col-stat font-bold text-slate-500">${c.v}</td>
-      <td class="col-stat font-bold text-slate-500">${c.t}</td>
-      <td class="col-total font-black text-blue-800">${c.total}</td>
-      <td class="col-supp font-black text-orange-700">${c.supp}</td>
-    </tr>`;
-    body.innerHTML += row;
-  });
-  
-  // 3. การสร้างแถวสรุปผลรวมรายวัน (ดึก, เช้า, บ่าย, รวมทั้งหมด)
-  ['ด','ช','บ','total'].forEach(type => {
-    let label = (type === 'total' ? 'รวม' : 'ผลัด ' + type);
-    let fRow = `<tr class="summary-row">
-      <td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
+      // แสดงผลรวมแบบ 30/2
+      const totalDisplay = c.r > 0 ? `${c.total}/${c.r}` : `${c.total}`;
+      row += `<td class="col-stat font-bold">${c.d}</td><td class="col-stat font-bold">${c.m}</td><td class="col-stat font-bold">${c.a}</td><td class="col-stat font-bold">${c.v}</td><td class="col-stat font-bold">${c.t}</td><td class="col-stat font-bold text-rose-600">${c.r}</td><td class="col-total font-black text-blue-800">${totalDisplay}</td><td class="col-supp font-black">${c.supp}</td></tr>`;
+      body.innerHTML += row;
+    });
     
-    for(let d = 0; d < daysInMonth; d++) { 
-      const val = dStats[d][type];
-      // ดึงค่าเป้าหมายอัตรากำลัง (Targets) มาเปรียบเทียบสี [cite: 45, 46]
-      const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
-      
-      const cl = val < target ? "text-rose-600 font-bold" : (val > target ? "text-amber-600 font-bold" : (type === 'total' ? "text-blue-700 font-bold" : "text-emerald-600 font-bold")); 
-      fRow += `<td class="${cl}">${val}</td>`; 
+    // แถวสรุปอัตรากำลังรายวัน
+    ['ด','ช','บ','total'].forEach(type => {
+      let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${type === 'total' ? 'รวม' : 'ผลัด ' + type}</td>`;
+      for(let d=0; d<daysInMonth; d++) { 
+        const val = dStats[d][type], target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
+        fRow += `<td class="${val < target ? "text-rose-600 font-bold" : "text-emerald-600 font-bold"}">${val}</td>`; 
+      }
+      fRow += `<td colspan="8" class="bg-slate-50"></td></tr>`; body.innerHTML += fRow;
+    });
+  
+    // เพิ่มช่องหมายเหตุท้ายตาราง
+    const remarkHtml = `<div class="no-print mt-4"><label class="text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label><textarea id="scheduleRemark" placeholder="พิมพ์หมายเหตุที่นี่..."></textarea></div>`;
+    if(!document.getElementById('scheduleRemark')) {
+      document.querySelector('.table-container').insertAdjacentHTML('afterend', remarkHtml);
     }
-    fRow += `<td colspan="7" class="bg-slate-50"></td></tr>`; 
-    body.innerHTML += fRow;
-  });
-
-  // เรียกใช้ระบบ Sortable สำหรับลากวางชื่อ [cite: 33]
-  initTableSortable();
-}
+    initTableSortable();
+  }
     // --- 4. API & SYSTEM LOGIC ---
 
     async function callAPI(action, method = 'POST', data = {}) {
@@ -607,61 +581,64 @@
     async function handleMonthYearChange() {
       const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
       if(!mIn || !yIn) return;
+      const m = parseInt(mIn.value), y = parseInt(yIn.value);
+      document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่......../${y+543}`;
       
-      const m = parseInt(mIn.value); // เดือนที่เลือก (0-11)
-      const y = parseInt(yIn.value); // ปี ค.ศ.
-      const yearBE = y + 543; // ปี พ.ศ. ของเดือนที่จัดเวร
-      
-      // 1. ปรับปรุงชื่อเรื่องตาราง (Table Title)
-      document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่......../${yearBE}`;
-      
-      // 2. คำนวณเดือนย้อนหลัง 1 เดือน สำหรับ "ลงวันที่"
-      // หากเป็นเดือนมกราคม (0) เดือนก่อนหน้าจะเป็นธันวาคม (11) และปี พ.ศ. จะลดลง 1 ปี
-      const prevMonthIdx = (m === 0) ? 11 : m - 1;
-      const prevMonthYearBE = (m === 0) ? yearBE - 1 : yearBE;
-      const issuedDateLine = `ลงวันที่.......... เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}`;
-      
-      // 3. กำหนดข้อความ "สำหรับงาน..." ตามโหมดการใช้งาน (currentGroup)
-      let modeSubtitle = "";
-      const commonSuffix = "กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรมกลุ่มการพยาบาล";
-      const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
-      
-      if (currentGroup === 'nurse_p') {
-        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร ${commonSuffix} ${monthYearText}`;
-      } else if (currentGroup === 'nurse_m') {
-        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
-      } else {
-        // โหมดพนักงานช่วยเหลือคนไข้ (asst)
-        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
-      }
-      
-      // 4. แสดงผลที่ sub-header (บรรทัดลงวันที่ และ บรรทัดรายละเอียดงาน)
-      document.getElementById('sub-header').innerHTML = `${issuedDateLine}<br>${modeSubtitle}`;
-      
-      // --- ส่วนการโหลดข้อมูลเดิม (คงไว้ตามระบบเดิม) ---
       await refresh(false); 
       const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
       
       if (savedData && savedData.schedule) { 
-        // ถ้ามีข้อมูลที่บันทึกไว้แล้ว ให้ใช้ลำดับรายชื่อเดิม
-        activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) 
-          ? savedData.staffOrder 
-          : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
-          
+        activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
         currentSchedule = savedData.schedule; 
         currentTargets = savedData.targets || []; 
         currentWorkDays = savedData.workDays || 0; 
         isFinished = savedData.isFinished || false; 
+        // โหลดหมายเหตุมาแสดง [cite: 17]
+        setTimeout(() => {
+          if(document.getElementById('scheduleRemark')) document.getElementById('scheduleRemark').value = savedData.remark || getDefaultRemark();
+        }, 500);
       } else { 
-        // ถ้าไม่มีข้อมูล ให้ดึงรายชื่อใหม่จากฐานข้อมูล Staff เฉพาะกลุ่ม "หลัก"
         activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
         currentSchedule = constructInitialDraft(m, y, activeStaffOrder); 
-        isFinished = false; 
+        isFinished = false;
+        if(document.getElementById('scheduleRemark')) document.getElementById('scheduleRemark').value = getDefaultRemark();
       }
-      
-      updateWorkDayCount(); 
-      renderTable();
+      updateWorkDayCount(); renderTable();
     }
+    // ฟังก์ชันช่วยคืนค่าหมายเหตุเริ่มต้นตามโหมด
+    function getDefaultRemark() {
+      if (currentGroup === 'nurse_p') return "หมายเหตุ : พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรเสริม ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
+      if (currentGroup === 'nurse_m') return "หมายเหตุ : พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรปาริฉัตร ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
+      return "พนักงานช่วยเหลือคนไข้ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรเสริม ช5= ปฏิบัติงานหอสงฆ์อาพาธ";
+    }
+    
+    function selectMode(mode) { 
+      currentGroup = mode; 
+      document.getElementById('mode-overlay').style.display = 'none'; 
+      document.getElementById('main-ui').style.display = 'block'; 
+      
+      if (mode === 'nurse_p') {
+        document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
+        // ตั้งค่า 1-2-1 / 1-1-1
+        setQuotas(1,2,1, 1,1,1, 1,1,1, 1,1,1);
+      } else if (mode === 'nurse_m') {
+        document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)';
+        // ตั้งค่า 1-1-1 / 1-1-1
+        setQuotas(1,1,1, 1,1,1, 1,1,1, 1,1,1);
+      } else {
+        document.getElementById('role-label').innerText = 'พนักงานช่วยเหลือคนไข้';
+        setQuotas(1,3,1, 1,0,1, 1,1,1, 1,1,1);
+      }
+      populateSelectors(); initSortable(); refresh(); 
+    }
+
+// ฟังก์ชันช่วยตั้งค่า Quota
+function setQuotas(wrn,wrm,wra, wsn,wsm,wsa, hrn,hrm,hra, hsn,hsm,hsa) {
+  document.getElementById('q_wd_r_n').value = wrn; document.getElementById('q_wd_r_m').value = wrm; document.getElementById('q_wd_r_a').value = wra;
+  document.getElementById('q_wd_s_n').value = wsn; document.getElementById('q_wd_s_m').value = wsm; document.getElementById('q_wd_s_a').value = wsa;
+  document.getElementById('q_hd_r_n').value = hrn; document.getElementById('q_hd_r_m').value = hrm; document.getElementById('q_hd_r_a').value = hra;
+  document.getElementById('q_hd_s_n').value = hsn; document.getElementById('q_hd_s_m').value = hsm; document.getElementById('q_hd_s_a').value = hsa;
+}
 
     function updateUI() {
       const pList = document.getElementById('primaryStaffList'), sList = document.getElementById('supportStaffList'), select = document.getElementById('staffSelect');
@@ -703,7 +680,23 @@
     async function adminDelBook(date, name) { if(await Swal.fire({ title: 'ลบ?', icon: 'warning', showCancelButton: true }).then(r=>r.isConfirmed)) { showProgress('กำลังลบ...'); await callAPI('deleteBooking', 'POST', { date, name }); refresh(); } }
     async function submitBook(date, existing = "") { if(!currentStaff && !isAdmin) return Swal.fire('เลือกชื่อก่อน', '', 'warning'); let targetName = currentStaff; if (isAdmin) { const options = {}; if(appData.staff) appData.staff.forEach(s => options[s[0].trim()] = s[0]); const { value: sName } = await Swal.fire({ title: 'จองเวร (Admin)', input: 'select', inputOptions: options, showCancelButton: true }); if(!sName) return; targetName = sName; } const { value: type } = await Swal.fire({ title: 'ระบุเวร', input: 'select', inputOptions: { 'ด':'ด','ช':'ช','บ':'บ','x':'x','vac':'vac','อบรม':'อบรม' }, inputValue: existing, showCancelButton: true }); if(type) { showProgress('กำลังบันทึก...'); await callAPI('deleteBooking', 'POST', { date, targetName }); await callAPI('saveBooking', 'POST', { data: {date, name: targetName, type} }); refresh(); } }
     async function processAuto() { if (isFinished) return; const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value, extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value), q = { wd_r_n: document.getElementById('q_wd_r_n').value, wd_r_m: document.getElementById('q_wd_r_m').value, wd_r_a: document.getElementById('q_wd_r_a').value, wd_s_n: document.getElementById('q_wd_s_n').value, wd_s_m: document.getElementById('q_wd_s_m').value, wd_s_a: document.getElementById('q_wd_s_a').value, hd_r_n: document.getElementById('q_hd_r_n').value, hd_r_m: document.getElementById('q_hd_r_m').value, hd_r_a: document.getElementById('q_hd_r_a').value, hd_s_n: document.getElementById('q_hd_s_n').value, hd_s_m: document.getElementById('q_hd_s_m').value, hd_s_a: document.getElementById('q_hd_s_a').value }; showProgress('ระบบจัดเวรโดย AI ยังไม่เสถียร อยู่ระหว่างการพัฒนา กรุณาจัดแบบ Manual'); const res = await callAPI('generate', 'POST', { month: m, year: y, extraHolidays: extraH, q, activeStaffNames: activeStaffOrder }); if (res && res.schedule) { currentSchedule = res.schedule; currentTargets = res.targets; renderTable(); } Swal.close(); }
-    async function saveSchedule() { const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value; showProgress('กำลังบันทึก...'); await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays, isFinished, staffOrder: activeStaffOrder }); Swal.fire('สำเร็จ', 'บันทึกเรียบร้อย', 'success'); }
+    async function saveSchedule() {
+  const m = document.getElementById('runMonth').value, 
+        y = document.getElementById('runYear').value,
+        remark = document.getElementById('scheduleRemark').value;
+  showProgress('กำลังบันทึก...');
+  await callAPI('saveSchedule', 'POST', { 
+    month: m, 
+    year: y, 
+    schedule: currentSchedule, 
+    targets: currentTargets, 
+    workDays: currentWorkDays, 
+    isFinished, 
+    staffOrder: activeStaffOrder,
+    remark: remark // ส่งหมายเหตุไปบันทึก [cite: 25]
+  });
+  Swal.fire('สำเร็จ', 'บันทึกเรียบร้อย', 'success');
+}
     // --- ฟังก์ชันใหม่: สำหรับพนักงานลบการจองของตนเอง ---
     async function delBook(date) {
       if (!currentStaff) return;
