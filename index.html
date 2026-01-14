@@ -26,12 +26,51 @@
       overflow: auto; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; 
       max-width: 100%; max-height: 75vh; position: relative; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
     }
-    .table-official { border-collapse: separate; border-spacing: 0; width: auto; table-layout: fixed; transition: all 0.2s ease; }
-    .table-official { font-size: 10px; }
-    .table-official th, .table-official td { 
-      height: 32px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; 
-      text-align: center; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
+    /* ปรับปรุงพื้นฐานตารางให้ขยายเต็มพื้นที่ไว้ก่อน */
+    .table-official { 
+      border-collapse: separate; 
+      border-spacing: 0; 
+      width: 100%; /* เปลี่ยนจาก auto เป็น 100% เพื่อให้เต็มพื้นที่ */
+      table-layout: fixed; 
+      transition: all 0.3s ease; /* เพิ่มความสมูทตอนย่อขยาย */
+      font-size: 11px; /* ขนาดปกติ */
     }
+
+    /* --- ส่วนที่เพิ่ม: ฟังก์ชันขยายตารางให้ใหญ่ขึ้น --- */
+    .table-expanded {
+      width: max-content !important; /* ให้ตารางกว้างตามขนาดเนื้อหาที่ขยายออก */
+      min-width: 100%;
+      font-size: 14px !important; /* ขยายตัวอักษรในตาราง */
+    }
+
+    .table-expanded th, .table-expanded td {
+      height: 48px !important; /* เพิ่มความสูงเซลล์ */
+    }
+
+    /* ขยายความกว้างคอลัมน์วันที่และสถิติเมื่อขยาย */
+    .table-expanded .col-day, 
+    .table-expanded .col-stat, 
+    .table-expanded .col-total, 
+    .table-expanded .col-supp {
+      width: 45px !important;
+      min-width: 45px !important;
+    }
+
+    /* ปรับตำแหน่งคอลัมน์ Sticky เมื่อขยาย (ต้องคำนวณระยะ left ใหม่) */
+    .table-expanded .sticky-col-1 { width: 40px !important; min-width: 40px !important; }
+    .table-expanded .sticky-col-2 { 
+      left: 40px !important; /* ขยับตามความกว้าง col-1 */
+      width: 220px !important; 
+      min-width: 220px !important; 
+    }
+    .table-expanded .sticky-col-3 { 
+      left: 260px !important; /* 40 + 220 */
+      width: 110px !important; 
+      min-width: 110px !important; 
+    }
+
+    /* ปรับระยะ Top ของ Header เมื่อขยายตาราง */
+    .table-expanded thead tr:nth-child(2) th { top: 48px; }
 
     /* Strict 32px Columns for Data, Stats, Total, and Supp */
     .col-day, .col-stat, .col-total, .col-supp { width: 32px !important; min-width: 32px !important; max-width: 32px !important; }
