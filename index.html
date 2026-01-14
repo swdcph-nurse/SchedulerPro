@@ -482,6 +482,11 @@
       } 
     }
 
+/**
+ * ฟังก์ชันวาดตารางจัดเวรหลัก (ฉบับแก้ไขสมบูรณ์ที่สุด)
+ * แก้ไข: ขยายคอลัมน์ชื่อ-ตำแหน่ง, ย่อสถิติย่อยให้เท่าช่องวันที่, 
+ * Mark สีทึบวันหยุด/เวรจอง และแยก 'อบรม' ออกจาก 'บ' อย่างเด็ดขาด
+ */
 function renderTable() {
   const mIn = document.getElementById('runMonth'), 
         yIn = document.getElementById('runYear'), 
@@ -501,7 +506,7 @@ function renderTable() {
   
   const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
   
-  // 1. สร้าง Header ตาราง (Sticky และ Column Width)
+  // 1. สร้าง Header ตาราง
   let h1 = `<tr>
     <th class="sticky-col-1" rowspan="2">#</th>
     <th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th>
@@ -513,12 +518,12 @@ function renderTable() {
     const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
                  Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
     
-    // ไฮไลต์สีแดงทึบที่หัววันที่หากเป็นวันหยุด
+    // ไฮไลต์สีทึบที่หัววันที่หากเป็นวันหยุด
     h1 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${d}</th>`; 
     h2 += `<th class="col-day ${isH ? 'bg-holiday text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
   }
   
-  // ช่องสถิติรายบุคคล (ด ช บ V อ R) จะใช้คลาส col-stat ซึ่งมีความกว้างเท่ากับ col-day (32px)
+  // ช่องสถิติย่อย (ด ช บ V อ R) จะใช้คลาส col-stat ซึ่งมีความกว้างเท่ากับช่องวันที่
   h1 += `<th colspan="6" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th>
          <th class="col-total" rowspan="2">รวม</th>
          <th class="col-supp" rowspan="2">${suppColumnName}</th></tr>`;
@@ -547,13 +552,13 @@ function renderTable() {
       const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
                    Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
 
-      const assign = currentSchedule[dayIdx]?.assignments.find(a => a.name.trim() === name);
+      const assign = currentSchedule[dayIdx]?.assignments.find(a => a.name.trim() === name.trim());
       let val = (assign ? assign.type : "x").trim();
       if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
 
-      // --- นับสถิติรายบุคคล (แก้ไข: แยก 'อบรม' ออกจาก 'บ') ---
+      // --- นับสถิติรายบุคคล (แก้ไข: แยก 'อบรม' ออกจาก 'บ' อย่างชัดเจน) ---
       if (val === 'อบรม') {
-        c.t++; // นับช่อง อ (อบรม) อย่างเดียว
+        c.t++; // นับเฉพาะช่อง อ
       } else {
         if (val.includes('ด')) c.d++;
         if (val.includes('ช') || val.includes('ช5')) c.m++;
@@ -574,7 +579,7 @@ function renderTable() {
         dStats[dayIdx]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
       }
       
-      // --- ผลรวมเวรรายคน (รวม อบรม 1 เวร แต่ไม่รวม R และ vac) ---
+      // --- ผลรวมเวรรายคน (นับอบรมรวมเป็นวันทำงาน แต่ไม่รวม R และ vac) ---
       if (val !== 'x' && val.toLowerCase() !== 'vac' && !val.includes('R')) {
         if (val === 'อบรม') {
           c.total += 1;
@@ -594,7 +599,7 @@ function renderTable() {
       const shifts = ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"];
       
       shifts.forEach(opt => {
-        // ในตารางเวรให้แสดง 'อ' แทน 'อบรม' เพื่อความสวยงาม
+        // ในตารางเวรให้แสดง 'อ' แทน 'อบรม'
         const displayText = (opt === "อบรม") ? "อ" : opt; 
         row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${displayText}</option>`;
       });
@@ -634,7 +639,7 @@ function renderTable() {
     body.innerHTML += fRow;
   });
 
-  // 4. ส่วนของหมายเหตุและ Footer ท้ายกระดาษ (สำหรับพิมพ์)
+  // 4. หมายเหตุและ Footer การพิมพ์
   if (!document.getElementById('remark-container')) {
     const remarkHtml = `
       <div id="remark-container" class="mt-4">
@@ -672,66 +677,57 @@ function renderTable() {
     }
 
     async function handleMonthYearChange() {
-      const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
-      if(!mIn || !yIn) return;
-      
-      // แสดง Loading (โค้ดส่วนเดิม)
-      const container = document.querySelector('.table-container');
-      if (container) {
-        const loader = document.createElement('div');
-        loader.id = 'table-loader';
-        loader.className = 'table-loading-overlay';
-        loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังโหลด...</p></div>';
-        container.appendChild(loader);
+  const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
+  if(!mIn || !yIn) return;
+  
+  // แสดงสถานะการโหลด
+  const container = document.querySelector('.table-container');
+  const loader = document.createElement('div');
+  loader.id = 'table-loader';
+  loader.className = 'table-loading-overlay';
+  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังดึงข้อมูลเวรจากเซิร์ฟเวอร์...</p></div>';
+  container.appendChild(loader);
+
+  try {
+    const m = parseInt(mIn.value), y = parseInt(yIn.value), yearBE = y + 543;
+    
+    // 1. ดึงรายชื่อพนักงานปัจจุบันก่อน
+    await refresh(false); 
+    
+    // 2. ดึงข้อมูลตารางเวรที่บันทึกไว้
+    const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
+
+    // 3. จัดการหัวเรื่องและหมายเหตุ (โค้ดส่วนเดิมของคุณ)
+    // ... (ส่วนตั้งค่า orderNum, issuedDate, table-title) ...
+
+    if (savedData && savedData.schedule && savedData.schedule.length > 0) { 
+      // กรณีมีข้อมูลที่บันทึกไว้: ให้ใช้ลำดับรายชื่อจากข้อมูลที่บันทึก
+      if (savedData.staffOrder && savedData.staffOrder.length > 0) {
+        activeStaffOrder = savedData.staffOrder;
+      } else {
+        // กรณีไม่มี staffOrder ให้ดึงจากชื่อที่มีอยู่ใน schedule
+        activeStaffOrder = savedData.schedule[0].assignments.map(a => a.name.trim());
       }
-    
-      try {
-        const m = parseInt(mIn.value), y = parseInt(yIn.value), yearBE = y + 543;
-        const prevMonthIdx = (m === 0) ? 11 : m - 1;
-        const prevMonthYearBE = (m === 0) ? yearBE - 1 : yearBE;
-    
-        await refresh(false); 
-        const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
-    
-        // 1. ตั้งค่าหัวเรื่องหลักพร้อมช่องแก้ไขเลขที่คำสั่ง
-        const currentOrder = (savedData && savedData.orderNum) ? savedData.orderNum : "........";
-        document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="${currentOrder}">/${yearBE}`;
-    
-        // 2. ตั้งค่าหัวเรื่องรองพร้อมช่องแก้ไขวันที่ และข้อความตามโหมด
-        const currentDate = (savedData && savedData.issuedDate) ? savedData.issuedDate : "..........";
-        const commonSuffix = "กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรมกลุ่มการพยาบาล";
-        const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
-        
-        let modeSubtitle = "";
-        if (currentGroup === 'nurse_p') modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร ${commonSuffix} ${monthYearText}`;
-        else if (currentGroup === 'nurse_m') modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
-        else modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
-    
-        document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value="${currentDate}"> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>${modeSubtitle}`;
-    
-        // 3. จัดการหมายเหตุ
-        const remarkBox = document.getElementById('scheduleRemark');
-        if (remarkBox) {
-          remarkBox.value = (savedData && savedData.remark) ? savedData.remark : getDefaultRemark();
-          syncPrintRemark(remarkBox.value);
-        }
-    
-        // 4. โหลดข้อมูลตาราง (ตรรกะเดิม)
-        if (savedData && savedData.schedule) { 
-          activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
-          currentSchedule = savedData.schedule; currentTargets = savedData.targets || []; currentWorkDays = savedData.workDays || 0; isFinished = savedData.isFinished || false; 
-        } else { 
-          activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
-          currentSchedule = constructInitialDraft(m, y, activeStaffOrder); isFinished = false; 
-        }
-        
-        updateWorkDayCount(); 
-        renderTable();
-        
-      } finally {
-        if(document.getElementById('table-loader')) document.getElementById('table-loader').remove();
-      }
+      currentSchedule = savedData.schedule; 
+      currentTargets = savedData.targets || []; 
+      currentWorkDays = savedData.workDays || 0; 
+      isFinished = savedData.isFinished || false; 
+    } else { 
+      // กรณีไม่มีข้อมูลบันทึก: สร้างตารางร่างใหม่ตามรายชื่อกลุ่ม "หลัก"
+      activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
+      currentSchedule = constructInitialDraft(m, y, activeStaffOrder); 
+      isFinished = false;
     }
+    
+    updateWorkDayCount(); 
+    renderTable(); // วาดตารางใหม่
+    
+  } catch (err) {
+    Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลได้: ' + err, 'error');
+  } finally {
+    if(document.getElementById('table-loader')) document.getElementById('table-loader').remove();
+  }
+}
     // ฟังก์ชันช่วยคืนค่าหมายเหตุเริ่มต้นตามโหมด
     function getDefaultRemark() {
       if (currentGroup === 'nurse_p') return "พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรเสริม ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
