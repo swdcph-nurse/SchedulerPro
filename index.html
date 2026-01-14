@@ -406,7 +406,7 @@ function renderTable() {
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
   
-  const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม"; [cite: 2]
+  const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
   
   let h1 = `<tr>
     <th class="sticky-col-1" rowspan="2">#</th>
@@ -718,7 +718,7 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
     workDays: currentWorkDays, 
     isFinished, 
     staffOrder: activeStaffOrder,
-    remark: remark // ส่งหมายเหตุไปบันทึก [cite: 25]
+    remark: remark // ส่งหมายเหตุไปบันทึก
   });
   Swal.fire('สำเร็จ', 'บันทึกเรียบร้อย', 'success');
 }
