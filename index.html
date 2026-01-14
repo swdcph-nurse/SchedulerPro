@@ -547,6 +547,33 @@
     async function submitBook(date, existing = "") { if(!currentStaff && !isAdmin) return Swal.fire('เลือกชื่อก่อน', '', 'warning'); let targetName = currentStaff; if (isAdmin) { const options = {}; if(appData.staff) appData.staff.forEach(s => options[s[0].trim()] = s[0]); const { value: sName } = await Swal.fire({ title: 'จองเวร (Admin)', input: 'select', inputOptions: options, showCancelButton: true }); if(!sName) return; targetName = sName; } const { value: type } = await Swal.fire({ title: 'ระบุเวร', input: 'select', inputOptions: { 'ด':'ด','ช':'ช','บ':'บ','x':'x','vac':'vac','อบรม':'อบรม' }, inputValue: existing, showCancelButton: true }); if(type) { showProgress('กำลังบันทึก...'); await callAPI('deleteBooking', 'POST', { date, targetName }); await callAPI('saveBooking', 'POST', { data: {date, name: targetName, type} }); refresh(); } }
     async function processAuto() { if (isFinished) return; const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value, extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value), q = { wd_r_n: document.getElementById('q_wd_r_n').value, wd_r_m: document.getElementById('q_wd_r_m').value, wd_r_a: document.getElementById('q_wd_r_a').value, wd_s_n: document.getElementById('q_wd_s_n').value, wd_s_m: document.getElementById('q_wd_s_m').value, wd_s_a: document.getElementById('q_wd_s_a').value, hd_r_n: document.getElementById('q_hd_r_n').value, hd_r_m: document.getElementById('q_hd_r_m').value, hd_r_a: document.getElementById('q_hd_r_a').value, hd_s_n: document.getElementById('q_hd_s_n').value, hd_s_m: document.getElementById('q_hd_s_m').value, hd_s_a: document.getElementById('q_hd_s_a').value }; showProgress('AI กำลังจัดเวร...'); const res = await callAPI('generate', 'POST', { month: m, year: y, extraHolidays: extraH, q, activeStaffNames: activeStaffOrder }); if (res && res.schedule) { currentSchedule = res.schedule; currentTargets = res.targets; renderTable(); } Swal.close(); }
     async function saveSchedule() { const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value; showProgress('กำลังบันทึก...'); await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays, isFinished, staffOrder: activeStaffOrder }); Swal.fire('สำเร็จ', 'บันทึกเรียบร้อย', 'success'); }
+    // --- ฟังก์ชันใหม่: สำหรับพนักงานลบการจองของตนเอง ---
+    async function delBook(date) {
+      if (!currentStaff) return;
+      
+      const res = await Swal.fire({
+        title: 'ยืนยันการลบรายการจอง?',
+        text: `วันที่ ${date}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'ใช่, ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก'
+      });
+
+      if (res.isConfirmed) {
+        showProgress('กำลังลบรายการจอง...');
+        try {
+          // เรียกใช้ API deleteBooking โดยระบุชื่อพนักงานปัจจุบัน
+          await callAPI('deleteBooking', 'POST', { date: date, name: currentStaff });
+          await refresh(false); // รีเฟรชข้อมูลปฏิทิน
+          Swal.fire({ title: 'ลบสำเร็จ!', icon: 'success', timer: 1000, showConfirmButton: false });
+        } catch (err) {
+          Swal.fire('ผิดพลาด', 'ไม่สามารถลบข้อมูลได้: ' + err, 'error');
+        }
+      }
+    }
     async function showDayDetails(date) { const bks = appData.bookings ? appData.bookings.filter(b => b.date === date) : []; let html = `<div class="text-left overflow-x-auto border rounded-xl mb-4 bg-slate-50/50"><table class="w-full text-xs"><thead><tr class="bg-slate-200/50"><th class="p-2 text-left">ชื่อ</th><th class="p-2 text-center">เวร</th>${isAdmin ? '<th class="p-2">จัดการ</th>' : ''}</tr></thead><tbody>`; if (bks.length === 0) html += `<tr><td colspan="${isAdmin?3:2}" class="p-6 text-center italic text-slate-400">ไม่มีรายการจอง</td></tr>`; else bks.forEach(b => { const tagClass = getCalendarTagColorClass(b.type); html += `<tr class="border-b"><td class="p-2 font-bold">${b.name}</td><td class="p-2 text-center"><span class="tag-booking ${tagClass} px-3 py-1 inline-block rounded font-bold">${b.type}</span></td>${isAdmin ? `<td class="p-2 text-center whitespace-nowrap"><button onclick="adminEditBook('${date}', '${b.name}', '${b.type}')" class="btn-animate text-blue-500 mr-2 font-bold transition">แก้</button><button onclick="adminDelBook('${date}', '${b.name}')" class="btn-animate text-rose-500 font-bold transition">ลบ</button></td>` : ''}</tr>`; }); html += `</tbody></table></div>`; const myBk = bks.find(b => b.name.trim() === currentStaff.trim()); const res = await Swal.fire({ title: `รายการจอง: ${date}`, html, showCancelButton: true, confirmButtonText: isAdmin ? 'เพิ่มจอง' : (myBk ? 'แก้ไข' : 'จองเวร'), confirmButtonColor: '#3b82f6', showDenyButton: !!myBk && !isAdmin, denyButtonText: 'ลบจอง' }); if (res.isConfirmed) submitBook(date, myBk ? myBk.type : ""); else if (res.isDenied) delBook(date); }
     function exportExcel() { const table = document.getElementById("mainTable"), clone = table.cloneNode(true); Array.from(clone.querySelectorAll('select')).forEach(sel => sel.parentNode.replaceChild(document.createTextNode(sel.value), sel)); XLSX.writeFile(XLSX.utils.table_to_book(clone), `Shift_Schedule_${currentGroup}.xlsx`); }
     function copyTableToClipboard() { const table = document.getElementById("mainTable"), clone = table.cloneNode(true); Array.from(clone.querySelectorAll('select')).forEach(sel => sel.parentNode.replaceChild(document.createTextNode(sel.value), sel)); const div = document.createElement('div'); div.style.position = 'absolute'; div.style.left = '-9999px'; div.appendChild(clone); document.body.appendChild(div); const range = document.createRange(); range.selectNode(clone); window.getSelection().removeAllRanges(); window.getSelection().addRange(range); try { document.execCommand('copy'); Swal.fire('คัดลอกสำเร็จ!', '', 'success', {timer: 1000}); } catch (err) {} document.body.removeChild(div); }
