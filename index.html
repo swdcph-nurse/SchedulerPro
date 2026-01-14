@@ -133,6 +133,29 @@
       backdrop-filter: blur(2px);
       border-radius: 1rem;
     }
+    /* ยกเลิกตัวเอียงในหัวเรื่อง */
+    #sub-header { font-style: normal !important; color: #64748b; }
+
+    /* สไตล์สำหรับช่องพิมพ์แก้ไขในหัวตาราง */
+    .editable-header-input {
+      border: none;
+      background: transparent;
+      width: auto;
+      min-width: 50px;
+      text-align: center;
+      font-weight: 800;
+      color: inherit;
+      border-bottom: 1px dashed #cbd5e1;
+      outline: none;
+      padding: 0 2px;
+    }
+    .editable-header-input:focus { border-bottom: 1px solid #3b82f6; background: #eff6ff; }
+
+    @media print {
+      /* ตอนพิมพ์ให้ซ่อนเส้นประ */
+      .editable-header-input { border-bottom: none !important; }
+      #sub-header { color: black !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -535,53 +558,66 @@ function renderTable() {
     }
 
     async function handleMonthYearChange() {
-  const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
-  if(!mIn || !yIn) return;
-  
-  // แสดงสถานะการโหลดในพื้นที่ตาราง
-  const container = document.querySelector('.table-container');
-  const loader = document.createElement('div');
-  loader.id = 'table-loader';
-  loader.className = 'table-loading-overlay';
-  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังจัดเตรียมตาราง...</p></div>';
-  container.appendChild(loader);
-
-  try {
-    const m = parseInt(mIn.value), y = parseInt(yIn.value);
-    const yearBE = y + 543;
+      const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
+      if(!mIn || !yIn) return;
+      
+      // แสดง Loading (โค้ดส่วนเดิม)
+      const container = document.querySelector('.table-container');
+      if (container) {
+        const loader = document.createElement('div');
+        loader.id = 'table-loader';
+        loader.className = 'table-loading-overlay';
+        loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังโหลด...</p></div>';
+        container.appendChild(loader);
+      }
     
-    // ตั้งค่าหัวเรื่องตามโหมด (โค้ดเดิมของคุณ)
-    document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่......../${yearBE}`;
+      try {
+        const m = parseInt(mIn.value), y = parseInt(yIn.value), yearBE = y + 543;
+        const prevMonthIdx = (m === 0) ? 11 : m - 1;
+        const prevMonthYearBE = (m === 0) ? yearBE - 1 : yearBE;
     
-    // ... ส่วนการคำนวณวันและหัวข้ออื่นๆ (โค้ดเดิมของคุณ) ...
-
-    await refresh(false); 
-    const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
+        await refresh(false); 
+        const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
     
-    // จัดการหมายเหตุ
-    const remarkBox = document.getElementById('scheduleRemark');
-    if (remarkBox) {
-      remarkBox.value = (savedData && savedData.remark) ? savedData.remark : getDefaultRemark();
-      syncPrintRemark(remarkBox.value);
+        // 1. ตั้งค่าหัวเรื่องหลักพร้อมช่องแก้ไขเลขที่คำสั่ง
+        const currentOrder = (savedData && savedData.orderNum) ? savedData.orderNum : "........";
+        document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="${currentOrder}">/${yearBE}`;
+    
+        // 2. ตั้งค่าหัวเรื่องรองพร้อมช่องแก้ไขวันที่ และข้อความตามโหมด
+        const currentDate = (savedData && savedData.issuedDate) ? savedData.issuedDate : "..........";
+        const commonSuffix = "กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรมกลุ่มการพยาบาล";
+        const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
+        
+        let modeSubtitle = "";
+        if (currentGroup === 'nurse_p') modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร ${commonSuffix} ${monthYearText}`;
+        else if (currentGroup === 'nurse_m') modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+        else modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+    
+        document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value="${currentDate}"> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>${modeSubtitle}`;
+    
+        // 3. จัดการหมายเหตุ
+        const remarkBox = document.getElementById('scheduleRemark');
+        if (remarkBox) {
+          remarkBox.value = (savedData && savedData.remark) ? savedData.remark : getDefaultRemark();
+          syncPrintRemark(remarkBox.value);
+        }
+    
+        // 4. โหลดข้อมูลตาราง (ตรรกะเดิม)
+        if (savedData && savedData.schedule) { 
+          activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
+          currentSchedule = savedData.schedule; currentTargets = savedData.targets || []; currentWorkDays = savedData.workDays || 0; isFinished = savedData.isFinished || false; 
+        } else { 
+          activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
+          currentSchedule = constructInitialDraft(m, y, activeStaffOrder); isFinished = false; 
+        }
+        
+        updateWorkDayCount(); 
+        renderTable();
+        
+      } finally {
+        if(document.getElementById('table-loader')) document.getElementById('table-loader').remove();
+      }
     }
-
-    // โหลดข้อมูลตาราง
-    if (savedData && savedData.schedule) { 
-      activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
-      currentSchedule = savedData.schedule; currentTargets = savedData.targets || []; currentWorkDays = savedData.workDays || 0; isFinished = savedData.isFinished || false; 
-    } else { 
-      activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
-      currentSchedule = constructInitialDraft(m, y, activeStaffOrder); isFinished = false; 
-    }
-    
-    updateWorkDayCount(); 
-    renderTable();
-    
-  } finally {
-    // ลบตัวโหลดออกเมื่อเสร็จสิ้น
-    if(document.getElementById('table-loader')) document.getElementById('table-loader').remove();
-  }
-}
     // ฟังก์ชันช่วยคืนค่าหมายเหตุเริ่มต้นตามโหมด
     function getDefaultRemark() {
       if (currentGroup === 'nurse_p') return "หมายเหตุ : พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรเสริม ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
@@ -670,22 +706,27 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
     async function submitBook(date, existing = "") { if(!currentStaff && !isAdmin) return Swal.fire('เลือกชื่อก่อน', '', 'warning'); let targetName = currentStaff; if (isAdmin) { const options = {}; if(appData.staff) appData.staff.forEach(s => options[s[0].trim()] = s[0]); const { value: sName } = await Swal.fire({ title: 'จองเวร (Admin)', input: 'select', inputOptions: options, showCancelButton: true }); if(!sName) return; targetName = sName; } const { value: type } = await Swal.fire({ title: 'ระบุเวร', input: 'select', inputOptions: { 'ด':'ด','ช':'ช','บ':'บ','x':'x','vac':'vac','อบรม':'อบรม' }, inputValue: existing, showCancelButton: true }); if(type) { showProgress('กำลังบันทึก...'); await callAPI('deleteBooking', 'POST', { date, targetName }); await callAPI('saveBooking', 'POST', { data: {date, name: targetName, type} }); refresh(); } }
     async function processAuto() { if (isFinished) return; const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value, extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value), q = { wd_r_n: document.getElementById('q_wd_r_n').value, wd_r_m: document.getElementById('q_wd_r_m').value, wd_r_a: document.getElementById('q_wd_r_a').value, wd_s_n: document.getElementById('q_wd_s_n').value, wd_s_m: document.getElementById('q_wd_s_m').value, wd_s_a: document.getElementById('q_wd_s_a').value, hd_r_n: document.getElementById('q_hd_r_n').value, hd_r_m: document.getElementById('q_hd_r_m').value, hd_r_a: document.getElementById('q_hd_r_a').value, hd_s_n: document.getElementById('q_hd_s_n').value, hd_s_m: document.getElementById('q_hd_s_m').value, hd_s_a: document.getElementById('q_hd_s_a').value }; showProgress('ระบบจัดเวรโดย AI ยังไม่เสถียร อยู่ระหว่างการพัฒนา กรุณาจัดแบบ Manual'); const res = await callAPI('generate', 'POST', { month: m, year: y, extraHolidays: extraH, q, activeStaffNames: activeStaffOrder }); if (res && res.schedule) { currentSchedule = res.schedule; currentTargets = res.targets; renderTable(); } Swal.close(); }
     async function saveSchedule() {
-  const m = document.getElementById('runMonth').value, 
-        y = document.getElementById('runYear').value,
-        remark = document.getElementById('scheduleRemark').value;
-  showProgress('กำลังบันทึก...');
-  await callAPI('saveSchedule', 'POST', { 
-    month: m, 
-    year: y, 
-    schedule: currentSchedule, 
-    targets: currentTargets, 
-    workDays: currentWorkDays, 
-    isFinished, 
-    staffOrder: activeStaffOrder,
-    remark: remark // ส่งหมายเหตุไปบันทึก
-  });
-  Swal.fire('สำเร็จ', 'บันทึกเรียบร้อย', 'success');
-}
+      const m = document.getElementById('runMonth').value, 
+            y = document.getElementById('runYear').value,
+            remark = document.getElementById('scheduleRemark').value,
+            orderNum = document.getElementById('orderNum').value, // ดึงเลขที่คำสั่ง
+            issuedDate = document.getElementById('issuedDate').value; // ดึงวันที่ลงนาม
+    
+      showProgress('กำลังบันทึกข้อมูลทั้งหมด...');
+      await callAPI('saveSchedule', 'POST', { 
+        month: m, 
+        year: y, 
+        schedule: currentSchedule, 
+        targets: currentTargets, 
+        workDays: currentWorkDays, 
+        isFinished, 
+        staffOrder: activeStaffOrder,
+        remark: remark,
+        orderNum: orderNum, // ส่งไปบันทึก
+        issuedDate: issuedDate // ส่งไปบันทึก
+      });
+      Swal.fire('สำเร็จ', 'บันทึกข้อมูลและหัวเรื่องเรียบร้อยแล้ว', 'success');
+    }
     // --- ฟังก์ชันใหม่: สำหรับพนักงานลบการจองของตนเอง ---
     async function delBook(date) {
       if (!currentStaff) return;
