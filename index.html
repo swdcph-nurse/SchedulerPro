@@ -11,25 +11,76 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <style>
-    body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 13px; color: #1e293b; overflow-x: hidden; }
+    /* --- พื้นฐานและฟอนต์ --- */
+    body { 
+      font-family: 'Sarabun', sans-serif; 
+      background-color: #f8fafc; 
+      font-size: 13px; 
+      color: #1e293b; 
+      overflow-x: hidden; 
+    }
+
+    /* --- การปรับแต่ง Scrollbar --- */
+    ::-webkit-scrollbar { width: 6px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f1f5f9; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+    /* --- ระบบ Tab --- */
+    .tab-content { display: none; }
+    .tab-active { display: block; animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; } }
     
-    /* --- ตารางหลัก --- */
-    .table-container { overflow: auto; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; max-width: 100%; max-height: 75vh; position: relative; }
-    .table-official { border-collapse: separate; border-spacing: 0; width: 100% !important; table-layout: fixed; font-size: 10px; }
-    .table-official th, .table-official td { height: 32px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; text-align: center; vertical-align: middle; }
+    /* --- โครงสร้างตารางหลัก --- */
+    .table-container { 
+      overflow: auto; 
+      border-radius: 1rem; 
+      border: 1px solid #e2e8f0; 
+      background: white; 
+      max-width: 100%; 
+      max-height: 75vh; 
+      position: relative; 
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+    }
 
-    /* ปรับขนาดคอลัมน์ให้สมดุล */
-    .col-day, .col-stat { width: 32px !important; min-width: 32px !important; }
-    .col-total { width: 60px !important; min-width: 60px !important; background: #eff6ff !important; border-left: 1.5px solid #3b82f6 !important; }
-    .col-supp { width: 70px !important; min-width: 70px !important; background: #fff7ed !important; }
-    .sticky-col-1 { position: sticky; left: 0; z-index: 60; background: white !important; width: 40px !important; }
-    .sticky-col-2 { position: sticky; left: 40px; z-index: 60; background: white !important; width: 180px !important; text-align: left !important; padding-left: 8px !important; }
-    .sticky-col-3 { position: sticky; left: 220px; z-index: 60; background: white !important; width: 120px !important; border-right: 2px solid #cbd5e1 !important; }
+    .table-official { 
+      border-collapse: separate; 
+      border-spacing: 0; 
+      width: 100% !important; 
+      table-layout: fixed; 
+      font-size: 10px; 
+    }
 
-    /* --- ช่องเลือกเวร (ยกเลิกตัวหนาตามคำขอ) --- */
+    .table-official th, .table-official td { 
+      height: 32px; 
+      border-right: 1px solid #e2e8f0; 
+      border-bottom: 1px solid #e2e8f0; 
+      text-align: center; 
+      vertical-align: middle; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      white-space: nowrap; 
+    }
+
+    /* --- การปรับขนาดคอลัมน์ --- */
+    .col-day, .col-stat { width: 32px !important; min-width: 32px !important; } 
+    .col-total { width: 65px !important; min-width: 65px !important; background: #eff6ff !important; border-left: 1.5px solid #3b82f6 !important; }
+    .col-supp { width: 80px !important; min-width: 80px !important; background: #fff7ed !important; }
+
+    /* --- คอลัมน์ที่ล็อกไว้ (Sticky) --- */
+    .sticky-col-1 { position: sticky; left: 0; z-index: 60; background: #ffffff !important; width: 40px !important; min-width: 40px !important; box-shadow: inset -1px 0 0 #e2e8f0; }
+    .sticky-col-2 { position: sticky; left: 40px; z-index: 60; background: #ffffff !important; width: 200px !important; min-width: 200px !important; text-align: left !important; padding-left: 8px !important; box-shadow: inset -1px 0 0 #e2e8f0; }
+    .sticky-col-3 { position: sticky; left: 240px; z-index: 60; background: #ffffff !important; width: 130px !important; min-width: 130px !important; border-right: 2px solid #cbd5e1 !important; }
+
+    /* --- หัวตารางที่ล็อกไว้ --- */
+    thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 85; background: #f1f5f9 !important; color: #334155; font-weight: 800; box-shadow: inset 0 -1px 0 #cbd5e1, inset -1px 0 0 #e2e8f0; height: 32px; }
+    thead tr:nth-child(2) th { position: sticky; top: 32px; z-index: 80; background: #f1f5f9 !important; color: #334155; font-weight: 800; box-shadow: inset 0 -1px 0 #cbd5e1, inset -1px 0 0 #e2e8f0; height: 32px; }
+    thead tr:nth-child(1) th[class*="sticky-col-"], thead tr:nth-child(2) th[class*="sticky-col-"] { z-index: 110 !important; background: #e2e8f0 !important; }
+
+    /* --- ช่องเลือกเวร (Select Shift - ไม่เอาตัวหนา) --- */
     .select-shift { 
-      font-size: 12px !important; 
-      font-weight: 500 !important; /* ไม่เอาตัวหนา */
+      font-size: 13px !important; 
+      font-weight: 500 !important; 
       appearance: none; 
       -webkit-appearance: none; 
       text-align: center; 
@@ -39,30 +90,74 @@
       border: none; 
     }
 
-    /* ไฮไลต์สีทึบ */
+    /* --- ปุ่มและการตอบสนอง --- */
+    .btn-animate { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+    .btn-animate:hover { transform: translateY(-2px); filter: brightness(1.05); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    .btn-animate:active { transform: scale(0.95); }
+
+    /* --- สีและสถานะในตาราง --- */
     .bg-holiday { background-color: #fecaca !important; color: #991b1b !important; font-weight: 700; } 
     .cell-booked { background-color: #bfdbfe !important; outline: 1px solid #3b82f6; outline-offset: -1px; }
+
+    /* --- หน้าแรก (Mode Overlay) --- */
+    #mode-overlay { 
+      position: fixed; 
+      inset: 0; 
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
+      z-index: 200; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      backdrop-filter: blur(8px);
+    }
+    .mode-card { 
+      background: white; 
+      padding: 3rem 2rem; 
+      border-radius: 3rem; 
+      max-width: 900px; 
+      width: 95%; 
+      text-align: center; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* --- ปฏิทินจองเวร --- */
+    #tab-booking .calendar-day { min-height: 130px; padding: 0.5rem; border: 1px solid #e2e8f0; background: white; cursor: pointer; position: relative; }
+    .day-header { background: #eff6ff !important; color: #1e40af !important; padding: 12px !important; font-weight: 800 !important; border-bottom: 2px solid #3b82f6 !important; }
+    .tag-booking { font-size: 11px; padding: 3px 8px; margin-bottom: 3px; border-radius: 4px; color: white; font-weight: 800; display: flex; justify-content: space-between; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .type-ด { background: linear-gradient(135deg, #1e40af, #3b82f6); }
+    .type-ช { background: linear-gradient(135deg, #15803d, #22c55e); }
+    .type-บ { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .type-red { background: #ef4444 !important; }
+
+    /* --- ส่วนประกอบ UI อื่นๆ --- */
+    .modern-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); position: sticky; top: 0; z-index: 150; }
+    #scheduleRemark { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 0.75rem; font-size: 13px; background-color: #fffbeb; color: #92400e; margin-top: 15px; }
+    .table-loading-overlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.7); display: flex; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(2px); border-radius: 1rem; }
+    #sub-header { font-style: normal !important; color: #64748b; }
 
     /* --- การตั้งค่าสำหรับการพิมพ์ (Print) --- */
     @media print {
       @page { size: A4 landscape; margin: 0.5cm; }
-      body { background: white !important; }
-      .no-print, header, nav, button, #scheduleRemark, label { display: none !important; }
-      .table-container { overflow: visible !important; max-height: none !important; border: none !important; width: 100% !important; }
+      body { background: white !important; padding: 0 !important; }
+      .no-print, header, nav, .swal2-container, button, #scheduleRemark, label { display: none !important; }
+      .table-container { overflow: visible !important; max-height: none !important; border: none !important; box-shadow: none !important; width: 100% !important; }
       
-      /* ปรับขนาดตัวหนังสือเวรให้พอดีเวลาพิมพ์ */
-      .table-official { width: 100% !important; border: 0.5pt solid black !important; font-size: 7.5pt !important; }
-      .table-official th, .table-official td { border: 0.5pt solid black !important; padding: 1pt !important; height: auto !important; }
-      .select-shift { font-size: 8pt !important; color: black !important; font-weight: normal !important; }
+      .table-official { width: 100% !important; table-layout: fixed !important; border: 0.5pt solid black !important; font-size: 7.5pt !important; }
+      .table-official th, .table-official td { border: 0.5pt solid black !important; color: black !important; padding: 1pt !important; height: auto !important; background: white !important; }
       
-      /* บังคับสีทึบตอนพิมพ์ */
+      .select-shift { font-size: 8pt !important; font-weight: normal !important; color: black !important; }
+      
+      /* บังคับพิมพ์สีทึบ */
       .bg-holiday { background-color: #fecaca !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .cell-booked { background-color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       
       .sticky-col-1, .sticky-col-2, .sticky-col-3, thead th { position: static !important; box-shadow: none !important; border: 0.5pt solid black !important; }
-      #printRemarkDisplay { display: block !important; width: 100% !important; white-space: pre-wrap !important; font-size: 10pt !important; margin-top: 10px !important; text-align: left !important; color: black !important; border: none !important; }
+      #printRemarkDisplay { display: block !important; width: 100% !important; white-space: pre-wrap !important; font-size: 10pt !important; margin-top: 15px !important; text-align: left !important; border: none !important; }
+      
+      .print-footer { display: block !important; position: fixed; bottom: 0; right: 0; width: 100%; text-align: right; font-size: 9pt; color: #64748b; padding-top: 5px; }
+      body { padding-bottom: 30px !important; }
     }
-</style>
+  </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
 
@@ -376,7 +471,7 @@ function renderTable() {
   head.innerHTML = ""; body.innerHTML = "";
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
-  const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม"; [cite: 2]
+  const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
   
   // 1. Header
   let h1 = `<tr><th class="sticky-col-1" rowspan="2">#</th><th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th><th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
