@@ -133,6 +133,18 @@
       margin-top: 15px;
       resize: vertical;
     }
+    @media print {
+  /* ซ่อนช่อง textarea และแสดง div ข้อความแทน */
+  #scheduleRemark { display: none !important; }
+  #printRemarkDisplay { 
+    display: block !important; 
+    border: none !important; 
+    padding: 0 !important;
+    font-family: 'Sarabun', sans-serif !important;
+    width: 100% !important;
+  }
+  .no-print { display: none !important; }
+}
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -516,6 +528,16 @@
     if(!document.getElementById('scheduleRemark')) {
       document.querySelector('.table-container').insertAdjacentHTML('afterend', remarkHtml);
     }
+    const remarkArea = document.getElementById('remark-container');
+    if(!remarkArea) {
+      const html = `
+        <div id="remark-container" class="mt-4">
+          <label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label>
+          <textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea>
+          <div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; font-size: 11pt; border: 1px solid black; padding: 10px;"></div>
+        </div>`;
+      document.querySelector('.table-container').insertAdjacentHTML('afterend', html);
+    }
     initTableSortable();
   }
     // --- 4. API & SYSTEM LOGIC ---
@@ -534,44 +556,7 @@
 
     async function refresh(loader = true) { if(loader) showProgress('กำลังเชื่อมต่อฐานข้อมูล...'); try { const data = await callAPI('getAppData', 'GET'); if (data && data.staff) { appData = data; updateUI(); renderCalendar(); } } finally { if(loader) Swal.close(); } }
 
-    function selectMode(mode) { 
-      currentGroup = mode; 
-      document.getElementById('mode-overlay').style.display = 'none'; 
-      document.getElementById('main-ui').style.display = 'block'; 
-      
-      const label = document.getElementById('role-label');
-      
-      if (mode === 'nurse_p') {
-        label.innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
-        label.className = 'text-indigo-600';
-        // ตั้งค่าอัตรากำลังตามเงื่อนไข (พิเศษปาริฉัตร) [cite: 45]
-        document.getElementById('q_wd_r_n').value = 1; document.getElementById('q_wd_r_m').value = 2; document.getElementById('q_wd_r_a').value = 1;
-        document.getElementById('q_wd_s_n').value = 1; document.getElementById('q_wd_s_m').value = 1; document.getElementById('q_wd_s_a').value = 1;
-        document.getElementById('q_hd_r_n').value = 1; document.getElementById('q_hd_r_m').value = 1; document.getElementById('q_hd_r_a').value = 1;
-        document.getElementById('q_hd_s_n').value = 1; document.getElementById('q_hd_s_m').value = 1; document.getElementById('q_hd_s_a').value = 1;
-      } else if (mode === 'nurse_m') {
-        label.innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)';
-        label.className = 'text-amber-600';
-        // ตั้งค่าอัตรากำลังตามเงื่อนไข (สงฆ์อาพาธ) [cite: 45]
-        document.getElementById('q_wd_r_n').value = 1; document.getElementById('q_wd_r_m').value = 1; document.getElementById('q_wd_r_a').value = 1;
-        document.getElementById('q_wd_s_n').value = 1; document.getElementById('q_wd_s_m').value = 1; document.getElementById('q_wd_s_a').value = 1;
-        document.getElementById('q_hd_r_n').value = 1; document.getElementById('q_hd_r_m').value = 1; document.getElementById('q_hd_r_a').value = 1;
-        document.getElementById('q_hd_s_n').value = 1; document.getElementById('q_hd_s_m').value = 1; document.getElementById('q_hd_s_a').value = 1;
-      } else {
-        label.innerText = 'พนักงานช่วยเหลือคนไข้';
-        label.className = 'text-blue-600';
-        // ค่าเริ่มต้นเดิมสำหรับพนักงานช่วยเหลือคนไข้ [cite: 45]
-        document.getElementById('q_wd_r_n').value = 1; document.getElementById('q_wd_r_m').value = 3; document.getElementById('q_wd_r_a').value = 1;
-        document.getElementById('q_wd_s_n').value = 1; document.getElementById('q_wd_s_m').value = 0; document.getElementById('q_wd_s_a').value = 1;
-        document.getElementById('q_hd_r_n').value = 1; document.getElementById('q_hd_r_m').value = 1; document.getElementById('q_hd_r_a').value = 1;
-        document.getElementById('q_hd_s_n').value = 1; document.getElementById('q_hd_s_m').value = 1; document.getElementById('q_hd_s_a').value = 1;
-      }
-      
-      populateSelectors(); 
-      initSortable(); 
-      refresh(); 
-    }
-
+    
     function switchTab(id) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('tab-active')); const tab = document.getElementById('tab-' + id); if (tab) tab.classList.add('tab-active');
       document.querySelectorAll('.tab-btn-link').forEach(b => b.classList.remove('active', 'bg-blue-600', 'text-white')); const btn = document.getElementById('btn-' + id); if (btn) btn.classList.add('active', 'bg-blue-600', 'text-white');
@@ -581,27 +566,63 @@
     async function handleMonthYearChange() {
       const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
       if(!mIn || !yIn) return;
-      const m = parseInt(mIn.value), y = parseInt(yIn.value);
-      document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่......../${y+543}`;
       
+      const m = parseInt(mIn.value); // เดือนที่เลือก
+      const y = parseInt(yIn.value); // ปี ค.ศ.
+      const yearBE = y + 543; // ปี พ.ศ. ของตาราง
+      
+      // --- ส่วนที่ 1: กู้คืนหัวเรื่องตาราง ---
+      // 1.1 ปรับชื่อเรื่องตารางหลัก
+      document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่......../${yearBE}`;
+      
+      // 1.2 คำนวณวันที่ลงนาม (ย้อนหลัง 1 เดือน)
+      const prevMonthIdx = (m === 0) ? 11 : m - 1;
+      const prevMonthYearBE = (m === 0) ? yearBE - 1 : yearBE;
+      const issuedDateLine = `ลงวันที่.......... เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}`;
+      
+      // 1.3 กำหนดข้อความ "สำหรับงาน..." ตามโหมด
+      let modeSubtitle = "";
+      const commonSuffix = "กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรมกลุ่มการพยาบาล";
+      const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
+      
+      if (currentGroup === 'nurse_p') {
+        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร ${commonSuffix} ${monthYearText}`;
+      } else if (currentGroup === 'nurse_m') {
+        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+      } else {
+        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+      }
+      
+      // แสดงผลหัวเรื่อง
+      document.getElementById('sub-header').innerHTML = `${issuedDateLine}<br>${modeSubtitle}`;
+      
+      // --- ส่วนที่ 2: จัดการหมายเหตุค่าเริ่มต้น ---
       await refresh(false); 
       const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
       
+      // ตรวจสอบว่ามีหมายเหตุบันทึกไว้หรือไม่ ถ้าไม่มีให้ใช้ค่าเริ่มต้นทันที
+      setTimeout(() => {
+        const remarkBox = document.getElementById('scheduleRemark');
+        if (remarkBox) {
+          if (savedData && savedData.remark && savedData.remark.trim() !== "") {
+            remarkBox.value = savedData.remark;
+          } else {
+            remarkBox.value = getDefaultRemark(); // ใช้ค่าเริ่มต้นตามโหมด
+          }
+        }
+      }, 500);
+    
+      // โหลดข้อมูลตาราง
       if (savedData && savedData.schedule) { 
         activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
         currentSchedule = savedData.schedule; 
         currentTargets = savedData.targets || []; 
         currentWorkDays = savedData.workDays || 0; 
         isFinished = savedData.isFinished || false; 
-        // โหลดหมายเหตุมาแสดง [cite: 17]
-        setTimeout(() => {
-          if(document.getElementById('scheduleRemark')) document.getElementById('scheduleRemark').value = savedData.remark || getDefaultRemark();
-        }, 500);
       } else { 
         activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
         currentSchedule = constructInitialDraft(m, y, activeStaffOrder); 
         isFinished = false;
-        if(document.getElementById('scheduleRemark')) document.getElementById('scheduleRemark').value = getDefaultRemark();
       }
       updateWorkDayCount(); renderTable();
     }
@@ -617,19 +638,14 @@
       document.getElementById('mode-overlay').style.display = 'none'; 
       document.getElementById('main-ui').style.display = 'block'; 
       
-      if (mode === 'nurse_p') {
-        document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
-        // ตั้งค่า 1-2-1 / 1-1-1
-        setQuotas(1,2,1, 1,1,1, 1,1,1, 1,1,1);
-      } else if (mode === 'nurse_m') {
-        document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)';
-        // ตั้งค่า 1-1-1 / 1-1-1
-        setQuotas(1,1,1, 1,1,1, 1,1,1, 1,1,1);
-      } else {
-        document.getElementById('role-label').innerText = 'พนักงานช่วยเหลือคนไข้';
-        setQuotas(1,3,1, 1,0,1, 1,1,1, 1,1,1);
-      }
-      populateSelectors(); initSortable(); refresh(); 
+      // ตั้งค่า Quota เริ่มต้นตามโหมด (โค้ดเดิมของคุณ)
+      if (mode === 'nurse_p') setQuotas(1,2,1, 1,1,1, 1,1,1, 1,1,1);
+      else if (mode === 'nurse_m') setQuotas(1,1,1, 0,0,0, 1,1,1, 0,0,0);
+      else setQuotas(1,3,1, 1,0,1, 1,1,1, 1,1,1);
+    
+      populateSelectors(); 
+      initSortable(); 
+      handleMonthYearChange(); // เรียกใช้งานเพื่อตั้งค่าหัวเรื่องและหมายเหตุทันที
     }
 
 // ฟังก์ชันช่วยตั้งค่า Quota
