@@ -515,7 +515,7 @@ function renderTable() {
   
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
-  const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม"; [cite: 2]
+  const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
   
   // 1. สร้าง Header ตาราง
   let h1 = `<tr><th class="sticky-col-1" rowspan="2">#</th><th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th><th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
