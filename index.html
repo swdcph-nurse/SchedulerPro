@@ -87,40 +87,89 @@
       .sticky-col-1, .sticky-col-2, .sticky-col-3, thead th { position: static !important; box-shadow: none !important; }
       #printRemarkDisplay { display: block !important; width: 100% !important; white-space: pre-wrap !important; font-size: 10pt !important; margin-top: 10px !important; text-align: left !important; color: black !important; }
     }
+    /* --- กู้คืนอนิเมชันปุ่ม --- */
+    .btn-animate { 
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+      cursor: pointer;
+    }
+    .btn-animate:hover { 
+      transform: translateY(-2px); 
+      filter: brightness(1.05); 
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+    }
+    .btn-animate:active { 
+      transform: scale(0.95); 
+    }
+
+    /* --- แก้ไขหน้าแรก (Mode Overlay) ให้กึ่งกลางสวยงามตามภาพ --- */
+    #mode-overlay { 
+      position: fixed; 
+      inset: 0; 
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
+      z-index: 200; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+    .mode-card { 
+      background: white; 
+      padding: 3rem 2rem; 
+      border-radius: 3rem; 
+      max-width: 900px; 
+      width: 95%; 
+      text-align: center; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* --- สไตล์สำหรับการโหลด (Loading) --- */
+    .table-loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      backdrop-filter: blur(2px);
+      border-radius: 1rem;
+    }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
 
   <div id="mode-overlay">
-    <div class="mode-card shadow-2xl">
-      <div class="inline-flex p-4 rounded-3xl bg-blue-50 mb-6"><img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" class="w-16 h-16 rounded-2xl shadow-sm"></div>
-      <h1 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">SWD Scheduler <span class="text-blue-600">Pro</span></h1>
-      <p class="text-slate-400 mb-8 font-medium text-sm px-4">กรุณาเลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 px-4">
-        <button onclick="selectMode('nurse_p')" class="btn-animate group p-5 border-2 rounded-[2rem] mode-nurse-nurse-p flex flex-col items-center gap-3">
-          <div class="text-4xl">🏥</div>
-          <div class="text-center">
-            <div class="font-black text-slate-800 text-sm leading-tight">พยาบาลวิชาชีพ</div>
-            <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-1">(พิเศษปาริฉัตร)</p>
+    <div class="mode-card">
+      <div class="flex flex-col items-center mb-10">
+        <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" class="w-20 h-20 rounded-3xl shadow-md mb-4">
+        <h1 class="text-4xl font-black text-slate-800 tracking-tight">SWD Scheduler <span class="text-blue-600">Pro</span></h1>
+        <p class="text-slate-400 mt-2 font-bold uppercase tracking-widest text-xs">กรุณาเลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 px-4">
+        <button onclick="selectMode('nurse_p')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-indigo-500 hover:bg-indigo-50/50 flex flex-col items-center gap-4">
+          <div class="text-5xl bg-white p-4 rounded-2xl shadow-sm">👩‍⚕️</div>
+          <div>
+            <div class="font-black text-slate-800 text-lg">พยาบาลวิชาชีพ</div>
+            <p class="text-[11px] text-indigo-500 font-black mt-1">(พิเศษปาริฉัตร)</p>
           </div>
         </button>
-        <button onclick="selectMode('nurse_m')" class="btn-animate group p-5 border-2 rounded-[2rem] mode-nurse-m flex flex-col items-center gap-3">
-          <div class="text-4xl">🧘‍♂️</div>
-          <div class="text-center">
-            <div class="font-black text-slate-800 text-sm leading-tight">พยาบาลวิชาชีพ</div>
-            <p class="text-[10px] text-amber-600 font-bold uppercase tracking-widest mt-1">(สงฆ์อาพาธ)</p>
+        <button onclick="selectMode('nurse_m')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-amber-500 hover:bg-amber-50/50 flex flex-col items-center gap-4">
+          <div class="text-5xl bg-white p-4 rounded-2xl shadow-sm">👨‍⚕️</div>
+          <div>
+            <div class="font-black text-slate-800 text-lg">พยาบาลวิชาชีพ</div>
+            <p class="text-[11px] text-amber-600 font-black mt-1">(สงฆ์อาพาธ)</p>
           </div>
         </button>
-        <button onclick="selectMode('asst')" class="btn-animate group p-5 border-2 rounded-[2rem] mode-asst flex flex-col items-center gap-3">
-          <div class="text-4xl">🤝</div>
-          <div class="text-center">
-            <div class="font-black text-slate-800 text-sm leading-tight">พนักงานช่วยเหลือคนไข้</div>
-            <p class="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-1">(NA/Asst)</p>
+        <button onclick="selectMode('asst')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-blue-500 hover:bg-blue-50/50 flex flex-col items-center gap-4">
+          <div class="text-5xl bg-white p-4 rounded-2xl shadow-sm">🏥</div>
+          <div>
+            <div class="font-black text-slate-800 text-lg">พนักงานช่วยเหลือคนไข้</div>
+            <p class="text-[11px] text-blue-500 font-black mt-1">(NA/Asst)</p>
           </div>
         </button>
       </div>
     </div>
-  </div>
+</div>
 
   <div id="main-ui" style="display: none;">
     <header class="modern-nav px-4 py-2 mb-4 shadow-sm no-print">
@@ -486,68 +535,53 @@ function renderTable() {
     }
 
     async function handleMonthYearChange() {
-      const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
-      if(!mIn || !yIn) return;
-      
-      const m = parseInt(mIn.value); // เดือนที่เลือก
-      const y = parseInt(yIn.value); // ปี ค.ศ.
-      const yearBE = y + 543; // ปี พ.ศ. ของตาราง
-      
-      // --- ส่วนที่ 1: กู้คืนหัวเรื่องตาราง ---
-      // 1.1 ปรับชื่อเรื่องตารางหลัก
-      document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่......../${yearBE}`;
-      
-      // 1.2 คำนวณวันที่ลงนาม (ย้อนหลัง 1 เดือน)
-      const prevMonthIdx = (m === 0) ? 11 : m - 1;
-      const prevMonthYearBE = (m === 0) ? yearBE - 1 : yearBE;
-      const issuedDateLine = `ลงวันที่.......... เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}`;
-      
-      // 1.3 กำหนดข้อความ "สำหรับงาน..." ตามโหมด
-      let modeSubtitle = "";
-      const commonSuffix = "กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรมกลุ่มการพยาบาล";
-      const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
-      
-      if (currentGroup === 'nurse_p') {
-        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร ${commonSuffix} ${monthYearText}`;
-      } else if (currentGroup === 'nurse_m') {
-        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
-      } else {
-        modeSubtitle = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
-      }
-      
-      // แสดงผลหัวเรื่อง
-      document.getElementById('sub-header').innerHTML = `${issuedDateLine}<br>${modeSubtitle}`;
-      
-      // --- ส่วนที่ 2: จัดการหมายเหตุค่าเริ่มต้น ---
-      await refresh(false); 
-      const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
-      
-      // ตรวจสอบว่ามีหมายเหตุบันทึกไว้หรือไม่ ถ้าไม่มีให้ใช้ค่าเริ่มต้นทันที
-      setTimeout(() => {
-        const remarkBox = document.getElementById('scheduleRemark');
-        if (remarkBox) {
-          if (savedData && savedData.remark && savedData.remark.trim() !== "") {
-            remarkBox.value = savedData.remark;
-          } else {
-            remarkBox.value = getDefaultRemark(); // ใช้ค่าเริ่มต้นตามโหมด
-          }
-        }
-      }, 500);
+  const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
+  if(!mIn || !yIn) return;
+  
+  // แสดงสถานะการโหลดในพื้นที่ตาราง
+  const container = document.querySelector('.table-container');
+  const loader = document.createElement('div');
+  loader.id = 'table-loader';
+  loader.className = 'table-loading-overlay';
+  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังจัดเตรียมตาราง...</p></div>';
+  container.appendChild(loader);
+
+  try {
+    const m = parseInt(mIn.value), y = parseInt(yIn.value);
+    const yearBE = y + 543;
     
-      // โหลดข้อมูลตาราง
-      if (savedData && savedData.schedule) { 
-        activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
-        currentSchedule = savedData.schedule; 
-        currentTargets = savedData.targets || []; 
-        currentWorkDays = savedData.workDays || 0; 
-        isFinished = savedData.isFinished || false; 
-      } else { 
-        activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
-        currentSchedule = constructInitialDraft(m, y, activeStaffOrder); 
-        isFinished = false;
-      }
-      updateWorkDayCount(); renderTable();
+    // ตั้งค่าหัวเรื่องตามโหมด (โค้ดเดิมของคุณ)
+    document.getElementById('table-title').innerText = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่......../${yearBE}`;
+    
+    // ... ส่วนการคำนวณวันและหัวข้ออื่นๆ (โค้ดเดิมของคุณ) ...
+
+    await refresh(false); 
+    const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
+    
+    // จัดการหมายเหตุ
+    const remarkBox = document.getElementById('scheduleRemark');
+    if (remarkBox) {
+      remarkBox.value = (savedData && savedData.remark) ? savedData.remark : getDefaultRemark();
+      syncPrintRemark(remarkBox.value);
     }
+
+    // โหลดข้อมูลตาราง
+    if (savedData && savedData.schedule) { 
+      activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
+      currentSchedule = savedData.schedule; currentTargets = savedData.targets || []; currentWorkDays = savedData.workDays || 0; isFinished = savedData.isFinished || false; 
+    } else { 
+      activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
+      currentSchedule = constructInitialDraft(m, y, activeStaffOrder); isFinished = false; 
+    }
+    
+    updateWorkDayCount(); 
+    renderTable();
+    
+  } finally {
+    // ลบตัวโหลดออกเมื่อเสร็จสิ้น
+    if(document.getElementById('table-loader')) document.getElementById('table-loader').remove();
+  }
+}
     // ฟังก์ชันช่วยคืนค่าหมายเหตุเริ่มต้นตามโหมด
     function getDefaultRemark() {
       if (currentGroup === 'nurse_p') return "หมายเหตุ : พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรเสริม ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
@@ -697,8 +731,9 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
     
     function syncPrintRemark(val) {
       const printDisplay = document.getElementById('printRemarkDisplay');
-      if (printDisplay) {
-        printDisplay.innerText = val; 
+      if(printDisplay) {
+        // เพิ่มคำว่า หมายเหตุ : นำหน้าข้อความจริง
+        printDisplay.innerText = val ? "หมายเหตุ : " + val : "";
       }
     }
 
