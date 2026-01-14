@@ -707,34 +707,44 @@ function renderTable() {
       return "พนักงานช่วยเหลือคนไข้ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรเสริม ช5= ปฏิบัติงานหอสงฆ์อาพาธ";
     }
     
-    function selectMode(mode) { 
-      currentGroup = mode; 
-      document.getElementById('mode-overlay').style.display = 'none'; 
-      document.getElementById('main-ui').style.display = 'block'; 
-      
-      // ตั้งค่า Quota เริ่มต้นตามโหมด
-      if (mode === 'nurse_p') {
-        document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
-        setQuotas(1,2,1, 1,1,1, 1,1,1, 1,1,1);
-      } else if (mode === 'nurse_m') {
-        document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)';
-        setQuotas(1,1,1, 0,0,0, 1,1,1, 0,0,0);
-      } else {
-        document.getElementById('role-label').innerText = 'พนักงานช่วยเหลือคนไข้';
-        setQuotas(1,3,1, 1,0,1, 1,1,1, 1,1,1);
-      }
-    
-      populateSelectors(); 
-      initSortable(); 
-      handleMonthYearChange(); 
-    }  
+    // ฟังก์ชันสำหรับเลือกโหมดการใช้งาน
+function selectMode(mode) { 
+  currentGroup = mode; 
+  document.getElementById('mode-overlay').style.display = 'none'; 
+  document.getElementById('main-ui').style.display = 'block'; 
+  
+  const label = document.getElementById('role-label');
+  
+  if (mode === 'nurse_p') {
+    label.innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
+    setQuotas(1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+  } else if (mode === 'nurse_m') {
+    label.innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)';
+    setQuotas(1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0);
+  } else {
+    label.innerText = 'พนักงานช่วยเหลือคนไข้';
+    setQuotas(1, 3, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1);
+  }
 
-// ฟังก์ชันช่วยตั้งค่า Quota
-function setQuotas(wrn,wrm,wra, wsn,wsm,wsa, hrn,hrm,hra, hsn,hsm,hsa) {
-  document.getElementById('q_wd_r_n').value = wrn; document.getElementById('q_wd_r_m').value = wrm; document.getElementById('q_wd_r_a').value = wra;
-  document.getElementById('q_wd_s_n').value = wsn; document.getElementById('q_wd_s_m').value = wsm; document.getElementById('q_wd_s_a').value = wsa;
-  document.getElementById('q_hd_r_n').value = hrn; document.getElementById('q_hd_r_m').value = hrm; document.getElementById('q_hd_r_a').value = hra;
-  document.getElementById('q_hd_s_n').value = hsn; document.getElementById('q_hd_s_m').value = hsm; document.getElementById('q_hd_s_a').value = hsa;
+  populateSelectors(); 
+  initSortable(); 
+  handleMonthYearChange(); 
+}
+
+// ฟังก์ชันตั้งค่าอัตรากำลัง (Quota)
+function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
+  document.getElementById('q_wd_r_n').value = wrn;
+  document.getElementById('q_wd_r_m').value = wrm;
+  document.getElementById('q_wd_r_a').value = wra;
+  document.getElementById('q_wd_s_n').value = wsn;
+  document.getElementById('q_wd_s_m').value = wsm;
+  document.getElementById('q_wd_s_a').value = wsa;
+  document.getElementById('q_hd_r_n').value = hrn;
+  document.getElementById('q_hd_r_m').value = hrm;
+  document.getElementById('q_hd_r_a').value = hra;
+  document.getElementById('q_hd_s_n').value = hsn;
+  document.getElementById('q_hd_s_m').value = hsm;
+  document.getElementById('q_hd_s_a').value = hsa;
 }
 
     function updateUI() {
@@ -829,24 +839,20 @@ function setQuotas(wrn,wrm,wra, wsn,wsm,wsa, hrn,hrm,hra, hsn,hsm,hsa) {
       const table = document.getElementById('mainTable');
       if (!table) return;
       
-      // ซิงค์ข้อความหมายเหตุล่าสุดไปยังพื้นที่พิมพ์
       const remarkBox = document.getElementById('scheduleRemark');
       if (remarkBox) {
-        syncPrintRemark(remarkBox.value); [cite: 2]
+        syncPrintRemark(remarkBox.value); 
       }
       
-      window.print(); [cite: 2]
+      window.print(); 
     }
-
-/**
- * ฟังก์ชันช่วยส่งค่าจาก textarea ไปยัง div สำหรับแสดงผลตอนพิมพ์ 
- */
-function syncPrintRemark(val) {
-  const printDisplay = document.getElementById('printRemarkDisplay');
-  if(printDisplay) {
-    printDisplay.innerText = val; [cite: 2]
-  }
-}  
+    
+    function syncPrintRemark(val) {
+      const printDisplay = document.getElementById('printRemarkDisplay');
+      if (printDisplay) {
+        printDisplay.innerText = val; 
+      }
+    }
 
     // --- 5. INITIALIZATION ---
     window.onload = function() { populateSelectors(); };
