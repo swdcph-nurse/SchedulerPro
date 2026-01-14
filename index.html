@@ -156,6 +156,30 @@
       .editable-header-input { border-bottom: none !important; }
       #sub-header { color: black !important; }
     }
+    /* --- สไตล์ข้อความท้ายกระดาษสำหรับพิมพ์ --- */
+    .print-footer {
+      display: none; /* ซ่อนบนหน้าจอปกติ */
+    }
+
+    @media print {
+      .print-footer {
+        display: block !important;
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        text-align: right;
+        font-size: 9pt;
+        color: #64748b;
+        border-top: none;
+        padding-top: 5px;
+      }
+      
+      /* ปรับระยะห่างของเนื้อหาไม่ให้ทับ Footer */
+      body {
+        padding-bottom: 30px !important;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -529,7 +553,14 @@ function renderTable() {
   });
 
   if (!document.getElementById('remark-container')) {
-    const remarkHtml = `<div id="remark-container" class="mt-4"><label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label><textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea><div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; color: black; text-align: left;"></div></div>`;
+    const remarkHtml = `
+      <div id="remark-container" class="mt-4">
+        <label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label>
+        <textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea>
+        <div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; font-size: 11pt; color: black; text-align: left;"></div>
+        
+        <div id="print-footer-info" class="print-footer" style="display:none; font-family: 'Sarabun', sans-serif;"></div>
+      </div>`;
     document.querySelector('.table-container').insertAdjacentHTML('afterend', remarkHtml);
   }
   initTableSortable();
@@ -762,12 +793,24 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
       const table = document.getElementById('mainTable');
       if (!table) return;
       
-      const remarkBox = document.getElementById('scheduleRemark');
-      if (remarkBox) {
-        syncPrintRemark(remarkBox.value); 
+      // 1. จัดการวันที่ปัจจุบันในรูปแบบไทย
+      const now = new Date();
+      const dateStr = `${now.getDate()} ${mNames[now.getMonth()]} พ.ศ. ${now.getFullYear() + 543}`;
+      
+      // 2. ใส่ข้อความลงใน Footer
+      const footer = document.getElementById('print-footer-info');
+      if (footer) {
+        footer.innerText = `พิมพ์จากโปรแกรม SWD SchedulerPro ระบบจัดเวรปฏิบัติราชการ เมื่อวันที่ ${dateStr}`;
       }
       
-      window.print(); 
+      // 3. ซิงค์หมายเหตุ (คงเดิม)
+      const remarkBox = document.getElementById('scheduleRemark');
+      if (remarkBox) {
+        syncPrintRemark(remarkBox.value);
+      }
+      
+      // 4. สั่งพิมพ์
+      window.print();
     }
     
     function syncPrintRemark(val) {
