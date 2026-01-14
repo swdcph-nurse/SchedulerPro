@@ -20,14 +20,44 @@
     .tab-content { display: none; }
     .tab-active { display: block; animation: fadeIn 0.4s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; } }
-    
+    /* --- แก้ไข 2: เพิ่มสีสันให้หน้าปฏิทินจองเวร --- */
+    #tab-booking .calendar-day { 
+      min-height: 130px; 
+      padding: 0.5rem; 
+      border: 1px solid #e2e8f0; 
+      background: #ffffff; /* พื้นหลังขาวสะอาด */
+      transition: all 0.2s;
+    }
+    #tab-booking .calendar-day:hover {
+      background: #f1f5f9; /* ไฮไลต์เมื่อเอาเมาส์วาง */
+    }
+    /* หัววัน (อา-ส) ให้มีพื้นหลังสีฟ้าอ่อนสดใส */
+    .day-header {
+      background: #eff6ff !important;
+      color: #1e40af !important;
+      padding: 12px !important;
+      font-weight: 800 !important;
+      border-bottom: 2px solid #3b82f6 !important;
+    }
+
+    /* ปรับแต่ง Tag ในปฏิทินให้ดูมีมิติ */
+    .tag-booking {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
     /* --- จัดการตารางและความกว้างคอลัมน์ --- */
     .table-container { 
       overflow: auto; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; 
       max-width: 100%; max-height: 75vh; position: relative; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
     }
     /* กู้คืนความกว้างให้คงที่ (Fixed Layout) */
-    .table-official { border-collapse: separate; border-spacing: 0; width: max-content; table-layout: fixed; font-size: 10px; }
+    .table-official { 
+      border-collapse: separate; 
+      border-spacing: 0; 
+      width: 100% !important; /* เปลี่ยนจาก max-content เป็น 100% */
+      table-layout: fixed; 
+      font-size: 10px; 
+    }
     .table-official th, .table-official td { 
       height: 32px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; 
       text-align: center; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
@@ -361,8 +391,8 @@
       const m = parseInt(mIn.value), y = parseInt(yIn.value); grid.innerHTML = '';
       const first = new Date(y, m, 1).getDay(), daysCount = new Date(y, m + 1, 0).getDate(); 
       
-      // หัววัน (อา-ส) ให้ตัวหนังสือใหญ่ขึ้นเล็กน้อย
-      dNames.forEach(d => grid.innerHTML += `<div class="bg-white p-3 text-center text-sm font-black text-slate-500 border-b uppercase">${d}</div>`); 
+      // หัววัน (อา-ส) เพิ่มคลาส day-header เพื่อสีสันที่สวยงาม
+      dNames.forEach(d => grid.innerHTML += `<div class="day-header text-center text-sm uppercase">${d}</div>`); 
       
       for(let i=0; i<first; i++) grid.innerHTML += `<div class="calendar-day bg-slate-50/50 opacity-40"></div>`; 
       
@@ -370,12 +400,10 @@
         const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, 
               bks = appData.bookings ? appData.bookings.filter(b => b.date === dStr) : []; 
         
-        // แก้ไข: แสดงชื่อต่อด้วยประเภทเวร [ประเภทเวร]
         let bkHtml = bks.map(b => `
           <div class="tag-booking ${getCalendarTagColorClass(b.type)}">
-            <span>${getCleanName(b.name)}</span>
-            <span class="opacity-90 underline">${b.type}</span>
-          </div>
+            <span class="truncate">${getCleanName(b.name)}</span>
+            <span class="font-black ml-1">${b.type}</span> </div>
         `).join(''); 
         
         grid.innerHTML += `
@@ -404,10 +432,13 @@ function renderTable() {
   body.innerHTML = "";
   
   const daysInMonth = new Date(y, m + 1, 0).getDate();
+  // ตัวเก็บสถิติอัตรากำลังรายวัน (ไม่นับ อบรม และ R)
   const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
   
+  // กำหนดชื่อคอลัมน์เสริมตามโหมด
   const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
   
+  // 1. สร้าง Header ตาราง
   let h1 = `<tr>
     <th class="sticky-col-1" rowspan="2">#</th>
     <th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th>
@@ -419,6 +450,7 @@ function renderTable() {
     const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
                  Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
     
+    // ไฮไลต์สีแดงทึบที่หัววันที่หากเป็นวันหยุด
     h1 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${d}</th>`; 
     h2 += `<th class="col-day ${isH ? 'bg-holiday text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
   }
@@ -430,6 +462,7 @@ function renderTable() {
          <th class="col-stat">V</th><th class="col-stat">อ</th><th class="col-stat">R</th></tr>`;
   head.innerHTML = h1 + h2;
 
+  // 2. สร้างแถวข้อมูลรายคน
   activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
     const staffInfo = appData.staff.find(s => s[0].trim() === name) || [name, "N/A", "หลัก"];
     let row = `<tr data-name="${name}">
@@ -454,6 +487,7 @@ function renderTable() {
       let val = (assign ? assign.type : "x").trim();
       if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
 
+      // นับสถิติรายบุคคล
       if (val.includes('ด')) c.d++;
       if (val.includes('ช') || val.includes('ช5')) c.m++;
       if (val.includes('บ')) c.a++;
@@ -462,6 +496,7 @@ function renderTable() {
       if (val.includes('R')) c.r++;
       c.supp += (val.match(/\*/g) || []).length;
 
+      // ตรรกะยกเว้นไม่นับเป็นอัตรากำลังรายวัน
       let isExcludedFromDaily = (val === 'อบรม' || val.includes('R'));
       if (currentGroup === 'nurse_m' && val.includes('*')) isExcludedFromDaily = true;
 
@@ -472,23 +507,31 @@ function renderTable() {
         dStats[dayIdx]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
       }
       
+      // ผลรวมเวรรายคน (นับอบรมรวมด้วย แต่ไม่รวม R)
       if (val !== 'x' && val.toLowerCase() !== 'vac' && !val.includes('R')) {
         c.total += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0) + (val === 'อบรม' ? 1 : 0);
       }
 
-      // ตรวจสอบคลาสสำหรับการแสดงสีพื้นหลัง
+      // ตรวจสอบคลาสสำหรับการแสดงสีพื้นหลังทึบ
       let cellClass = "col-day";
       if (isH) cellClass += " bg-holiday";
       if (assign?.isBooked) cellClass += " cell-booked";
 
       row += `<td class="${cellClass}">
         <select class="select-shift ${getShiftColorClass(val)}" onchange="handleShiftChange('${name}', ${dayIdx}, this)">`;
-      ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"].forEach(opt => {
-        row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`;
+      
+      const shifts = ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"];
+      
+      shifts.forEach(opt => {
+        // ในตารางเวรให้แสดง 'อ' แทน 'อบรม'
+        const displayText = (opt === "อบรม") ? "อ" : opt; 
+        row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${displayText}</option>`;
       });
+      
       row += `</select></td>`;
     }
 
+    // แสดงผลรวมแบบ 30/2 หากมีรีเฟอร์
     const totalDisplay = c.r > 0 ? `${c.total}/${c.r}` : `${c.total}`;
     
     row += `
@@ -504,7 +547,7 @@ function renderTable() {
     body.innerHTML += row;
   });
   
-  // แถวสรุปผลรายวัน
+  // 3. สร้างแถวสรุปอัตรากำลังรายวัน
   ['ด','ช','บ','total'].forEach(type => {
     let label = (type === 'total' ? 'รวม' : 'ผลัด ' + type);
     let fRow = `<tr class="summary-row">
@@ -513,19 +556,20 @@ function renderTable() {
     for(let d = 0; d < daysInMonth; d++) { 
       const val = dStats[d][type];
       const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
-      const cl = val < target ? "text-rose-600 font-bold" : "text-emerald-600 font-bold"; 
+      const cl = val < target ? "text-rose-600 font-bold" : (val > target ? "text-amber-600 font-bold" : (type === 'total' ? "text-blue-700 font-bold" : "text-emerald-600 font-bold")); 
       fRow += `<td class="${cl}">${val}</td>`; 
     }
     fRow += `<td colspan="8" class="bg-slate-50"></td></tr>`; 
     body.innerHTML += fRow;
   });
 
+  // 4. หมายเหตุท้ายตาราง
   if (!document.getElementById('remark-container')) {
     const remarkHtml = `
       <div id="remark-container" class="mt-4">
         <label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label>
         <textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea>
-        <div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; color: black; text-align: left;"></div>
+        <div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; font-size: 11pt; border: none; padding: 0; color: black; text-align: left;"></div>
       </div>`;
     document.querySelector('.table-container').insertAdjacentHTML('afterend', remarkHtml);
   }
