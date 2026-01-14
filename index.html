@@ -20,100 +20,72 @@
     .tab-content { display: none; }
     .tab-active { display: block; animation: fadeIn 0.4s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; } }
-    /* --- แก้ไข 2: เพิ่มสีสันให้หน้าปฏิทินจองเวร --- */
-    #tab-booking .calendar-day { 
-      min-height: 130px; 
-      padding: 0.5rem; 
-      border: 1px solid #e2e8f0; 
-      background: #ffffff; /* พื้นหลังขาวสะอาด */
-      transition: all 0.2s;
-    }
-    #tab-booking .calendar-day:hover {
-      background: #f1f5f9; /* ไฮไลต์เมื่อเอาเมาส์วาง */
-    }
-    /* หัววัน (อา-ส) ให้มีพื้นหลังสีฟ้าอ่อนสดใส */
-    .day-header {
-      background: #eff6ff !important;
-      color: #1e40af !important;
-      padding: 12px !important;
-      font-weight: 800 !important;
-      border-bottom: 2px solid #3b82f6 !important;
-    }
-
-    /* ปรับแต่ง Tag ในปฏิทินให้ดูมีมิติ */
-    .tag-booking {
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-    /* --- จัดการตารางและความกว้างคอลัมน์ --- */
+    
     .table-container { 
       overflow: auto; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; 
       max-width: 100%; max-height: 75vh; position: relative; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
     }
-    /* กู้คืนความกว้างให้คงที่ (Fixed Layout) */
-    .table-official { 
-      border-collapse: separate; 
-      border-spacing: 0; 
-      width: 100% !important; /* เปลี่ยนจาก max-content เป็น 100% */
-      table-layout: fixed; 
-      font-size: 10px; 
-    }
+    .table-official { border-collapse: separate; border-spacing: 0; width: max-content; table-layout: fixed; font-size: 10px; }
     .table-official th, .table-official td { 
       height: 32px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; 
       text-align: center; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
     }
 
-    /* กำหนดความกว้างคอลัมน์ให้เล็กลงตามเดิม */
-    .col-day { width: 30px !important; min-width: 30px !important; }
-    .col-stat { width: 35px !important; min-width: 35px !important; }
+    /* --- ปรับขนาดคอลัมน์ตามคำขอ --- */
+    .col-day, .col-stat { width: 32px !important; min-width: 32px !important; } /* ช่องวันที่และสถิติ ด ช บ V อ R กว้างเท่ากัน */ 
     .col-total { width: 65px !important; min-width: 65px !important; background: #eff6ff !important; border-left: 1.5px solid #3b82f6 !important; }
-    .col-supp { width: 50px !important; min-width: 50px !important; background: #fff7ed !important; }
+    .col-supp { width: 80px !important; min-width: 80px !important; background: #fff7ed !important; }
 
-    /* คอลัมน์ที่ล็อกไว้ */
-    .sticky-col-1 { position: sticky; left: 0; z-index: 60; background: #ffffff !important; width: 32px !important; min-width: 32px !important; box-shadow: inset -1px 0 0 #e2e8f0; }
-    .sticky-col-2 { position: sticky; left: 32px; z-index: 60; background: #ffffff !important; width: 160px !important; min-width: 160px !important; text-align: left !important; padding-left: 6px !important; box-shadow: inset -1px 0 0 #e2e8f0; }
-    .sticky-col-3 { position: sticky; left: 192px; z-index: 60; background: #ffffff !important; width: 90px !important; min-width: 90px !important; border-right: 2px solid #cbd5e1 !important; }
+    /* --- คอลัมน์ที่ล็อกไว้ (ปรับให้กว้างขึ้น) --- */
+    .sticky-col-1 { position: sticky; left: 0; z-index: 60; background: #ffffff !important; width: 40px !important; min-width: 40px !important; box-shadow: inset -1px 0 0 #e2e8f0; }
+    .sticky-col-2 { position: sticky; left: 40px; z-index: 60; background: #ffffff !important; width: 200px !important; min-width: 200px !important; text-align: left !important; padding-left: 8px !important; box-shadow: inset -1px 0 0 #e2e8f0; } 
+    .sticky-col-3 { position: sticky; left: 240px; z-index: 60; background: #ffffff !important; width: 130px !important; min-width: 130px !important; border-right: 2px solid #cbd5e1 !important; } 
 
-    /* หัวตาราง */
     thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 85; background: #f1f5f9 !important; color: #334155; font-weight: 800; box-shadow: inset 0 -1px 0 #cbd5e1, inset -1px 0 0 #e2e8f0; height: 32px; }
     thead tr:nth-child(2) th { position: sticky; top: 32px; z-index: 80; background: #f1f5f9 !important; color: #334155; font-weight: 800; box-shadow: inset 0 -1px 0 #cbd5e1, inset -1px 0 0 #e2e8f0; height: 32px; }
     thead tr:nth-child(1) th[class*="sticky-col-"], thead tr:nth-child(2) th[class*="sticky-col-"] { z-index: 110 !important; background: #e2e8f0 !important; }
 
-    /* --- สีไฮไลต์ (Mark สีทึบ) --- */
-    /* วันหยุด: สีแดงอ่อนทึบ */
+    /* --- สีไฮไลต์ --- */
     .bg-holiday { background-color: #fecaca !important; color: #991b1b !important; font-weight: 800; } 
-    /* เวรจอง: สีน้ำเงินอ่อนทึบ */
     .cell-booked { background-color: #bfdbfe !important; outline: 1px solid #3b82f6; outline-offset: -1px; }
     .cell-booked select { color: #1e40af !important; font-weight: 800; }
 
     .select-shift { font-size: 13px !important; font-weight: 800; appearance: none; -webkit-appearance: none; text-align: center; cursor: pointer; width: 100%; background: transparent; border: none; }
-    .text-red { color: #ef4444 !important; font-weight: 800; }
 
-    #mode-overlay { position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(15, 23, 42, 0.98), #0f172a); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-    .mode-card { background: white; padding: 2.5rem 2rem; border-radius: 2.5rem; max-width: 650px; width: 95%; text-align: center; }
-    .modern-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); position: sticky; top: 0; z-index: 150; }
+    /* --- ปฏิทินจองเวร (กู้คืนสีสัน) --- */
+    #tab-booking .calendar-day { min-height: 130px; padding: 0.5rem; border: 1px solid #e2e8f0; background: white; cursor: pointer; position: relative; }
+    .day-header { background: #eff6ff !important; color: #1e40af !important; padding: 12px !important; font-weight: 800 !important; border-bottom: 2px solid #3b82f6 !important; }
+    .tag-booking { font-size: 11px; padding: 3px 8px; margin-bottom: 3px; border-radius: 4px; color: white; font-weight: 800; display: flex; justify-content: space-between; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     
-    #scheduleRemark { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 0.75rem; font-size: 13px; background-color: #fffbeb; color: #92400e; margin-top: 15px; resize: vertical; }
+    .type-ด { background: linear-gradient(135deg, #1e40af, #3b82f6); }
+    .type-ช { background: linear-gradient(135deg, #15803d, #22c55e); }
+    .type-บ { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .type-red { background: #ef4444 !important; }
+
+    #scheduleRemark { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 0.75rem; font-size: 13px; background-color: #fffbeb; color: #92400e; margin-top: 15px; }
 
     /* --- การตั้งค่าสำหรับการพิมพ์ (Print) --- */
     @media print {
       @page { size: A4 landscape; margin: 0.5cm; }
       body { background: transparent !important; padding: 0 !important; }
-      /* ซ่อนพื้นหลังการ์ดขาวและส่วนที่ไม่เกี่ยวข้อง */
       #report-view { padding: 0 !important; border: none !important; box-shadow: none !important; background: transparent !important; }
-      #main-ui { background: transparent !important; }
       .no-print, header, nav, .swal2-container, button, #scheduleRemark { display: none !important; }
-      
       .table-container { overflow: visible !important; max-height: none !important; border: none !important; box-shadow: none !important; width: 100% !important; }
-      .table-official { width: 100% !important; table-layout: fixed !important; border: 0.5pt solid black !important; font-size: 8pt !important; }
-      .table-official th, .table-official td { border: 0.5pt solid black !important; color: black !important; padding: 1pt !important; height: auto !important; }
       
-      /* บังคับให้พิมพ์สีพื้นหลัง (วันหยุดและเวรจอง) */
+      /* ปรับขนาดคอลัมน์ตอนพิมพ์ให้เล็กลงเพื่อให้ครบทุกช่องในหน้าเดียว */
+      .table-official { width: 100% !important; table-layout: fixed !important; border: 0.5pt solid black !important; font-size: 7.5pt !important; } 
+      .sticky-col-1 { width: 25px !important; }
+      .sticky-col-2 { width: 110px !important; }
+      .sticky-col-3 { width: 85px !important; }
+      .col-day, .col-stat { width: auto !important; }
+      .col-total, .col-supp { width: 35px !important; }
+      
+      .table-official th, .table-official td { border: 0.5pt solid black !important; color: black !important; padding: 1pt !important; height: auto !important; background: white !important; }
       .bg-holiday { background-color: #fecaca !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .cell-booked { background-color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       
-      .sticky-col-1, .sticky-col-2, .sticky-col-3, thead th { position: static !important; box-shadow: none !important; background: white !important; }
-      #printRemarkDisplay { display: block !important; width: 100% !important; white-space: pre-wrap !important; font-size: 10pt !important; margin-top: 10px !important; text-align: left !important; }
+      .sticky-col-1, .sticky-col-2, .sticky-col-3, thead th { position: static !important; box-shadow: none !important; }
+      #printRemarkDisplay { display: block !important; width: 100% !important; white-space: pre-wrap !important; font-size: 10pt !important; margin-top: 10px !important; text-align: left !important; color: black !important; }
     }
   </style>
 </head>
@@ -391,7 +363,6 @@
       const m = parseInt(mIn.value), y = parseInt(yIn.value); grid.innerHTML = '';
       const first = new Date(y, m, 1).getDay(), daysCount = new Date(y, m + 1, 0).getDate(); 
       
-      // หัววัน (อา-ส) เพิ่มคลาส day-header เพื่อสีสันที่สวยงาม
       dNames.forEach(d => grid.innerHTML += `<div class="day-header text-center text-sm uppercase">${d}</div>`); 
       
       for(let i=0; i<first; i++) grid.innerHTML += `<div class="calendar-day bg-slate-50/50 opacity-40"></div>`; 
@@ -403,7 +374,8 @@
         let bkHtml = bks.map(b => `
           <div class="tag-booking ${getCalendarTagColorClass(b.type)}">
             <span class="truncate">${getCleanName(b.name)}</span>
-            <span class="font-black ml-1">${b.type}</span> </div>
+            <span class="font-black ml-1">${b.type}</span>
+          </div>
         `).join(''); 
         
         grid.innerHTML += `
@@ -414,166 +386,80 @@
       } 
     }
 
-    /**
- * ฟังก์ชันวาดตารางจัดเวรหลัก
- * ปรับปรุง: เพิ่มส่วนแสดงหมายเหตุสำหรับแสดงผลในหน้าพิมพ์ 
- */
 function renderTable() {
-  const mIn = document.getElementById('runMonth'), 
-        yIn = document.getElementById('runYear'), 
-        head = document.getElementById('dutyHead'), 
-        body = document.getElementById('dutyBody');
-        
+  const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'), head = document.getElementById('dutyHead'), body = document.getElementById('dutyBody');
   if(!mIn || !yIn || !head || !body) return;
-  
-  const m = parseInt(mIn.value);
-  const y = parseInt(yIn.value);
-  head.innerHTML = ""; 
-  body.innerHTML = "";
-  
+  const m = parseInt(mIn.value), y = parseInt(yIn.value);
+  head.innerHTML = ""; body.innerHTML = "";
   const daysInMonth = new Date(y, m + 1, 0).getDate();
-  // ตัวเก็บสถิติอัตรากำลังรายวัน (ไม่นับ อบรม และ R)
   const dStats = Array.from({length: daysInMonth}, () => ({'ด':0, 'ช':0, 'บ':0, 'total':0}));
   
-  // กำหนดชื่อคอลัมน์เสริมตามโหมด
   const suppColumnName = (currentGroup === 'nurse_m') ? "เสริมปาริฉัตร" : "เสริม";
   
-  // 1. สร้าง Header ตาราง
-  let h1 = `<tr>
-    <th class="sticky-col-1" rowspan="2">#</th>
-    <th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th>
-    <th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
+  let h1 = `<tr><th class="sticky-col-1" rowspan="2">#</th><th class="sticky-col-2" rowspan="2">ชื่อ-นามสกุล</th><th class="sticky-col-3" rowspan="2">ตำแหน่ง</th>`;
   let h2 = `<tr>`;
-
   for(let d = 1; d <= daysInMonth; d++) { 
-    const dObj = new Date(y, m, d);
-    const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
-                 Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
-    
-    // ไฮไลต์สีแดงทึบที่หัววันที่หากเป็นวันหยุด
+    const dObj = new Date(y, m, d), isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
     h1 += `<th class="col-day ${isH ? 'bg-holiday' : ''}">${d}</th>`; 
     h2 += `<th class="col-day ${isH ? 'bg-holiday text-[10px]' : 'text-[10px]'}">${dNames[dObj.getDay()]}</th>`; 
   }
-  
-  h1 += `<th colspan="6" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th>
-         <th class="col-total" rowspan="2">รวม</th>
-         <th class="col-supp" rowspan="2">${suppColumnName}</th></tr>`;
-  h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th>
-         <th class="col-stat">V</th><th class="col-stat">อ</th><th class="col-stat">R</th></tr>`;
+  h1 += `<th colspan="6" class="bg-slate-200 text-[10px]">สถิติสะสมรายคน</th><th class="col-total" rowspan="2">รวม</th><th class="col-supp" rowspan="2">${suppColumnName}</th></tr>`;
+  h2 += `<th class="col-stat">ด</th><th class="col-stat">ช</th><th class="col-stat">บ</th><th class="col-stat">V</th><th class="col-stat">อ</th><th class="col-stat">R</th></tr>`;
   head.innerHTML = h1 + h2;
 
-  // 2. สร้างแถวข้อมูลรายคน
   activeStaffOrder.filter(n => n && n.trim() !== "").forEach((name, idx) => {
     const staffInfo = appData.staff.find(s => s[0].trim() === name) || [name, "N/A", "หลัก"];
-    let row = `<tr data-name="${name}">
-      <td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td>
-      <td class="sticky-col-2 font-bold truncate group">
-        <div class="flex items-center">
-          <span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>
-          ${name}
-        </div>
-      </td>
-      <td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
-    
+    let row = `<tr data-name="${name}"><td class="sticky-col-1 font-bold text-slate-400">${idx+1}</td><td class="sticky-col-2 font-bold truncate group"><div class="flex items-center"><span class="row-drag-handle no-print mr-1 opacity-20 group-hover:opacity-100 transition cursor-grab">⋮⋮</span>${name}</div></td><td class="sticky-col-3 text-[10px] text-slate-400 truncate">${staffInfo[1] || ""}</td>`;
     let c = { d:0, m:0, a:0, v:0, t:0, r:0, total:0, supp:0 };
     
     for(let d = 1; d <= daysInMonth; d++) {
-      const dayIdx = d - 1;
-      const dObj = new Date(y, m, d);
-      const isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || 
-                   Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
-
+      const dayIdx = d - 1, dObj = new Date(y, m, d), isH = (dObj.getDay() === 0 || dObj.getDay() === 6 || Array.from(document.querySelectorAll('.extra-h:checked')).some(el => el.value == d.toString().padStart(2,'0'))); 
       const assign = currentSchedule[dayIdx]?.assignments.find(a => a.name.trim() === name);
       let val = (assign ? assign.type : "x").trim();
       if(val.toLowerCase() === 'off' || val === 'X') val = 'x'; 
 
-      // นับสถิติรายบุคคล
-      if (val.includes('ด')) c.d++;
-      if (val.includes('ช') || val.includes('ช5')) c.m++;
-      if (val.includes('บ')) c.a++;
-      if (val.toLowerCase() === 'vac') c.v++;
-      if (val === 'อบรม') c.t++;
-      if (val.includes('R')) c.r++;
+      if (val.includes('ด')) c.d++; if (val.includes('ช') || val.includes('ช5')) c.m++; if (val.includes('บ')) c.a++; if (val.toLowerCase() === 'vac') c.v++; if (val === 'อบรม') c.t++; if (val.includes('R')) c.r++;
       c.supp += (val.match(/\*/g) || []).length;
 
-      // ตรรกะยกเว้นไม่นับเป็นอัตรากำลังรายวัน
       let isExcludedFromDaily = (val === 'อบรม' || val.includes('R'));
       if (currentGroup === 'nurse_m' && val.includes('*')) isExcludedFromDaily = true;
-
       if (val !== 'x' && val.toLowerCase() !== 'vac' && !isExcludedFromDaily) {
-        dStats[dayIdx]['ด'] += (val.includes('ด') ? 1 : 0);
-        dStats[dayIdx]['ช'] += (val.includes('ช') || val.includes('ช5') ? 1 : 0);
-        dStats[dayIdx]['บ'] += (val.includes('บ') ? 1 : 0);
+        dStats[dayIdx]['ด'] += (val.includes('ด') ? 1 : 0); dStats[dayIdx]['ช'] += (val.includes('ช') || val.includes('ช5') ? 1 : 0); dStats[dayIdx]['บ'] += (val.includes('บ') ? 1 : 0);
         dStats[dayIdx]['total'] += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0);
       }
-      
-      // ผลรวมเวรรายคน (นับอบรมรวมด้วย แต่ไม่รวม R)
       if (val !== 'x' && val.toLowerCase() !== 'vac' && !val.includes('R')) {
         c.total += (val.includes('ด')?1:0) + (val.includes('ช')||val.includes('ช5')?1:0) + (val.includes('บ')?1:0) + (val === 'อบรม' ? 1 : 0);
       }
 
-      // ตรวจสอบคลาสสำหรับการแสดงสีพื้นหลังทึบ
       let cellClass = "col-day";
       if (isH) cellClass += " bg-holiday";
       if (assign?.isBooked) cellClass += " cell-booked";
 
-      row += `<td class="${cellClass}">
-        <select class="select-shift ${getShiftColorClass(val)}" onchange="handleShiftChange('${name}', ${dayIdx}, this)">`;
-      
-      const shifts = ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"];
-      
-      shifts.forEach(opt => {
-        // ในตารางเวรให้แสดง 'อ' แทน 'อบรม'
-        const displayText = (opt === "อบรม") ? "อ" : opt; 
-        row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${displayText}</option>`;
+      row += `<td class="${cellClass}"><select class="select-shift ${getShiftColorClass(val)}" onchange="handleShiftChange('${name}', ${dayIdx}, this)">`;
+      ["x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"].forEach(opt => {
+        row += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${(opt === "อบรม") ? "อ" : opt}</option>`;
       });
-      
       row += `</select></td>`;
     }
-
-    // แสดงผลรวมแบบ 30/2 หากมีรีเฟอร์
     const totalDisplay = c.r > 0 ? `${c.total}/${c.r}` : `${c.total}`;
-    
-    row += `
-      <td class="col-stat font-bold text-slate-700">${c.d}</td>
-      <td class="col-stat font-bold text-slate-700">${c.m}</td>
-      <td class="col-stat font-bold text-slate-700">${c.a}</td>
-      <td class="col-stat font-bold text-slate-500">${c.v}</td>
-      <td class="col-stat font-bold text-slate-500">${c.t}</td>
-      <td class="col-stat font-bold text-rose-600">${c.r}</td>
-      <td class="col-total font-black text-blue-800">${totalDisplay}</td>
-      <td class="col-supp font-black text-orange-700">${c.supp}</td>
-    </tr>`;
+    row += `<td class="col-stat font-bold text-slate-700">${c.d}</td><td class="col-stat font-bold text-slate-700">${c.m}</td><td class="col-stat font-bold text-slate-700">${c.a}</td><td class="col-stat font-bold text-slate-500">${c.v}</td><td class="col-stat font-bold text-slate-500">${c.t}</td><td class="col-stat font-bold text-rose-600">${c.r}</td><td class="col-total font-black text-blue-800">${totalDisplay}</td><td class="col-supp font-black text-orange-700">${c.supp}</td></tr>`;
     body.innerHTML += row;
   });
   
-  // 3. สร้างแถวสรุปอัตรากำลังรายวัน
   ['ด','ช','บ','total'].forEach(type => {
     let label = (type === 'total' ? 'รวม' : 'ผลัด ' + type);
-    let fRow = `<tr class="summary-row">
-      <td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
-    
+    let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
     for(let d = 0; d < daysInMonth; d++) { 
-      const val = dStats[d][type];
-      const target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
-      const cl = val < target ? "text-rose-600 font-bold" : (val > target ? "text-amber-600 font-bold" : (type === 'total' ? "text-blue-700 font-bold" : "text-emerald-600 font-bold")); 
-      fRow += `<td class="${cl}">${val}</td>`; 
+      const val = dStats[d][type], target = currentTargets[d] ? (type === 'total' ? currentTargets[d]['ด'] + currentTargets[d]['ช'] + currentTargets[d]['บ'] : currentTargets[d][type]) : 0;
+      fRow += `<td class="${val < target ? "text-rose-600 font-bold" : "text-emerald-600 font-bold"}">${val}</td>`; 
     }
-    fRow += `<td colspan="8" class="bg-slate-50"></td></tr>`; 
-    body.innerHTML += fRow;
+    fRow += `<td colspan="8" class="bg-slate-50"></td></tr>`; body.innerHTML += fRow;
   });
 
-  // 4. หมายเหตุท้ายตาราง
   if (!document.getElementById('remark-container')) {
-    const remarkHtml = `
-      <div id="remark-container" class="mt-4">
-        <label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label>
-        <textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea>
-        <div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; font-size: 11pt; border: none; padding: 0; color: black; text-align: left;"></div>
-      </div>`;
+    const remarkHtml = `<div id="remark-container" class="mt-4"><label class="no-print text-[10px] font-black text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label><textarea id="scheduleRemark" oninput="syncPrintRemark(this.value)"></textarea><div id="printRemarkDisplay" class="print-only-text" style="display:none; white-space: pre-wrap; margin-top: 10px; color: black; text-align: left;"></div></div>`;
     document.querySelector('.table-container').insertAdjacentHTML('afterend', remarkHtml);
   }
-  
   initTableSortable();
 }
     // --- 4. API & SYSTEM LOGIC ---
