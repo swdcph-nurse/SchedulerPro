@@ -139,33 +139,108 @@
       
       .print-footer { display: block !important; position: fixed; bottom: 0; right: 0; width: 100%; text-align: right; font-size: 9pt; color: #64748b; }
     }
+    #mode-overlay { 
+      position: fixed; 
+      inset: 0; 
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
+      z-index: 200; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+    .mode-card { 
+      background: white; 
+      padding: 3rem 2rem; 
+      border-radius: 3rem; 
+      max-width: 1000px; /* จำกัดความกว้างไม่ให้ล้นตามภาพ image_240cc5.png */
+      width: 90%; 
+      text-align: center; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* --- กู้คืนสีสันหน้าปฏิทินจองเวร --- */
+    #tab-booking .calendar-day { 
+      min-height: 120px; 
+      padding: 0.5rem; 
+      border: 1px solid #e2e8f0; 
+      background: white; 
+      transition: all 0.2s;
+    }
+    .day-header { 
+      background: #f1f5f9 !important; 
+      color: #64748b !important; 
+      padding: 10px !important; 
+      font-weight: 800 !important; 
+    }
+    .tag-booking { 
+      font-size: 11px; 
+      padding: 3px 8px; 
+      margin-bottom: 3px; 
+      border-radius: 6px; 
+      color: white; 
+      font-weight: 700; 
+      display: flex; 
+      justify-content: space-between; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    /* สีแถวประเภทเวร */
+    .type-ด { background: linear-gradient(135deg, #1e40af, #3b82f6); }
+    .type-ช { background: linear-gradient(135deg, #15803d, #22c55e); }
+    .type-บ { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .type-red { background: #ef4444 !important; }
+
+    /* --- แก้ไขช่องพิมพ์หมายเหตุให้สวยงาม --- */
+    #scheduleRemark {
+      width: 100%;
+      min-height: 100px;
+      padding: 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 1.5rem;
+      font-size: 14px;
+      background-color: #fffbeb;
+      color: #92400e;
+      margin-top: 15px;
+      outline: none;
+      resize: vertical;
+      transition: all 0.2s;
+    }
+    #scheduleRemark:focus { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
 
   <div id="mode-overlay">
-    <div class="mode-card">
-      <div class="flex flex-col items-center mb-10">
-        <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" class="w-20 h-20 rounded-3xl shadow-md mb-4">
-        <h1 class="text-4xl font-black text-slate-800 tracking-tight">SWD Scheduler <span class="text-blue-600">Pro</span></h1>
-        <p class="text-slate-400 mt-2 font-bold uppercase tracking-widest text-xs">กรุณาเลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 px-4">
-        <button onclick="selectMode('nurse_p')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-indigo-500 hover:bg-indigo-50/50 flex flex-col items-center gap-4">
-          <div class="text-5xl bg-white p-4 rounded-2xl shadow-sm">👩‍⚕️</div>
-          <div><div class="font-black text-slate-800 text-lg">พยาบาลวิชาชีพ</div><p class="text-[11px] text-indigo-500 font-black mt-1">(พิเศษปาริฉัตร)</p></div>
-        </button>
-        <button onclick="selectMode('nurse_m')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-amber-500 hover:bg-amber-50/50 flex flex-col items-center gap-4">
-          <div class="text-5xl bg-white p-4 rounded-2xl shadow-sm">👨‍⚕️</div>
-          <div><div class="font-black text-slate-800 text-lg">พยาบาลวิชาชีพ</div><p class="text-[11px] text-amber-600 font-black mt-1">(สงฆ์อาพาธ)</p></div>
-        </button>
-        <button onclick="selectMode('asst')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-blue-500 hover:bg-blue-50/50 flex flex-col items-center gap-4">
-          <div class="text-5xl bg-white p-4 rounded-2xl shadow-sm">🏥</div>
-          <div><div class="font-black text-slate-800 text-lg">พนักงานช่วยเหลือคนไข้</div><p class="text-[11px] text-blue-500 font-black mt-1">(NA/Asst)</p></div>
-        </button>
-      </div>
+  <div class="mode-card">
+    <div class="flex flex-col items-center mb-10">
+      <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" class="w-20 h-20 rounded-3xl shadow-md mb-4">
+      <h1 class="text-4xl font-black text-slate-800 tracking-tight">SWD Scheduler <span class="text-blue-600">Pro</span></h1>
+      <p class="text-slate-400 mt-2 font-bold uppercase tracking-widest text-xs">กรุณาเลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
     </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 px-4">
+      <button onclick="selectMode('nurse_p')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-indigo-500 hover:bg-indigo-50 flex flex-col items-center gap-4">
+        <div class="text-5xl">👩‍⚕️</div>
+        <div>
+          <div class="font-black text-slate-800 text-lg">พยาบาลวิชาชีพ</div>
+          <p class="text-[11px] text-indigo-500 font-black mt-1">(พิเศษปาริฉัตร)</p>
+        </div>
+      </button>
+      <button onclick="selectMode('nurse_m')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-amber-500 hover:bg-amber-50 flex flex-col items-center gap-4">
+        <div class="text-5xl">👨‍⚕️</div>
+        <div>
+          <div class="font-black text-slate-800 text-lg">พยาบาลวิชาชีพ</div>
+          <p class="text-[11px] text-amber-600 font-black mt-1">(สงฆ์อาพาธ)</p>
+        </div>
+      </button>
+      <button onclick="selectMode('asst')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-blue-500 hover:bg-blue-50 flex flex-col items-center gap-4">
+        <div class="text-5xl">🏥</div>
+        <div>
+          <div class="font-black text-slate-800 text-lg">พนักงานช่วยเหลือคนไข้</div>
+          <p class="text-[11px] text-blue-500 font-black mt-1">(NA/Asst)</p>
+        </div>
+      </button>
+    </div>
+  </div>
 </div>
 
   <div id="main-ui" style="display: none;">
@@ -404,33 +479,34 @@
     // --- 3. RENDERING ENGINE (FIXED HEADER & ALIGNMENT) ---
 
     function renderCalendar() { 
-      const mIn = document.getElementById('bookMonth'), yIn = document.getElementById('bookYear'), grid = document.getElementById('calendarGrid'); 
-      if(!mIn || !yIn || !grid) return; 
-      const m = parseInt(mIn.value), y = parseInt(yIn.value); grid.innerHTML = '';
-      const first = new Date(y, m, 1).getDay(), daysCount = new Date(y, m + 1, 0).getDate(); 
-      
-      dNames.forEach(d => grid.innerHTML += `<div class="day-header text-center text-sm uppercase">${d}</div>`); 
-      
-      for(let i=0; i<first; i++) grid.innerHTML += `<div class="calendar-day bg-slate-50/50 opacity-40"></div>`; 
-      
-      for(let d=1; d<=daysCount; d++) { 
-        const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, 
-              bks = appData.bookings ? appData.bookings.filter(b => b.date === dStr) : []; 
-        
-        let bkHtml = bks.map(b => `
-          <div class="tag-booking ${getCalendarTagColorClass(b.type)}">
-            <span class="truncate">${getCleanName(b.name)}</span>
-            <span class="font-black ml-1">${b.type}</span>
-          </div>
-        `).join(''); 
-        
-        grid.innerHTML += `
-          <div class="calendar-day p-2 text-left btn-animate" onclick="showDayDetails('${dStr}')">
-            <span class="day-num">${d}</span>
-            <div class="flex flex-col mt-7">${bkHtml}</div>
-          </div>`; 
-      } 
-    }
+  const mIn = document.getElementById('bookMonth'), yIn = document.getElementById('bookYear'), grid = document.getElementById('calendarGrid'); 
+  if(!mIn || !yIn || !grid) return; 
+  const m = parseInt(mIn.value), y = parseInt(yIn.value); grid.innerHTML = '';
+  const first = new Date(y, m, 1).getDay(), daysCount = new Date(y, m + 1, 0).getDate(); 
+  
+  // หัววัน (อา-ส)
+  dNames.forEach(d => grid.innerHTML += `<div class="day-header text-center text-sm uppercase">${d}</div>`); 
+  
+  for(let i=0; i<first; i++) grid.innerHTML += `<div class="calendar-day bg-slate-50/50 opacity-40"></div>`; 
+  
+  for(let d=1; d<=daysCount; d++) { 
+    const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, 
+          bks = appData.bookings ? appData.bookings.filter(b => b.date === dStr) : []; 
+    
+    let bkHtml = bks.map(b => `
+      <div class="tag-booking ${getCalendarTagColorClass(b.type)}">
+        <span class="truncate">${getCleanName(b.name)}</span>
+        <span class="font-black ml-1 border-l border-white/30 pl-1">${b.type}</span>
+      </div>
+    `).join(''); 
+    
+    grid.innerHTML += `
+      <div class="calendar-day p-2 text-left btn-animate" onclick="showDayDetails('${dStr}')">
+        <span class="day-num" style="font-size: 16px; font-weight: 800; opacity: 0.3;">${d}</span>
+        <div class="flex flex-col mt-2">${bkHtml}</div>
+      </div>`; 
+  } 
+}
 
 /**
  * ฟังก์ชันวาดตารางจัดเวรหลัก (ฉบับแก้ไขสมบูรณ์ที่สุด)
