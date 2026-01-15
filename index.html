@@ -114,7 +114,7 @@
       .cell-booked { background-color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .sticky-col-1, .sticky-col-2, .sticky-col-3, thead th { position: static !important; box-shadow: none !important; }
       .editable-header-input { border-bottom: none !important; }
-      #table-title, #sub-header { font-size: 11pt !important; color: black !important; font-weight: bold !important; font-style: normal !important; margin-bottom: 4px !important; }
+      #table-title, #sub-header { font-size: 11pt !important; color: black !important; font-weight: bold !important; font-style: normal !important; margin-bottom: 4px !important; text-align: center !important; }
       #printRemarkDisplay { display: block !important; width: 100% !important; font-size: 10pt !important; margin-top: 10px !important; text-align: left; color: black; }
       .print-footer { display: block !important; position: fixed; bottom: 5px; right: 5px; font-size: 8pt; color: #64748b; }
       .select-shift { font-weight: normal !important; color: black !important; appearance: none; border: none; font-size: 7.5pt !important; }
@@ -125,6 +125,9 @@
     .staff-category-header { background: #f1f5f9; padding: 0.75rem 1rem; border-radius: 0.75rem; margin: 1rem 0; border-left: 4px solid #3b82f6; font-weight: 800; }
     .drag-handle { cursor: grab; padding: 4px; color: #cbd5e1; }
     .drag-handle:hover { color: #64748b; }
+
+    /* Loading Spinner */
+    .table-loading-overlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(2px); }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -241,7 +244,7 @@
                 <div class="text-[10px] font-black text-blue-400 text-center mb-3 uppercase tracking-widest">อัตรากำลัง (ดึก | เช้า | บ่าย)</div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-slate-50 p-3 rounded-xl border">
-                      <div class="text-[9px] font-black text-slate-500 mb-2 italic underline">☀️ วันทำการ (หลัก | เสริม)</div>
+                      <div class="text-[9px] font-black text-slate-500 mb-2 italic underline">☀️ วันทำงาน (หลัก | เสริม)</div>
                       <div class="grid grid-cols-3 gap-1 mb-1"><input id="q_wd_r_n" type="number" class="border p-1 text-center rounded text-xs font-bold" value="1"><input id="q_wd_r_m" type="number" class="border p-1 text-center rounded text-xs font-bold" value="1"><input id="q_wd_r_a" type="number" class="border p-1 text-center rounded text-xs font-bold" value="1"></div>
                       <div class="grid grid-cols-3 gap-1"><input id="q_wd_s_n" type="number" class="border p-1 text-center rounded text-xs font-bold text-amber-600" value="0"><input id="q_wd_s_m" type="number" class="border p-1 text-center rounded text-xs font-bold text-amber-600" value="0"><input id="q_wd_s_a" type="number" class="border p-1 text-center rounded text-xs font-bold text-amber-600" value="0"></div>
                     </div>
@@ -250,6 +253,11 @@
                       <div class="grid grid-cols-3 gap-1 mb-1"><input id="q_hd_r_n" type="number" class="border p-1 text-center rounded text-xs font-bold" value="1"><input id="q_hd_r_m" type="number" class="border p-1 text-center rounded text-xs font-bold" value="1"><input id="q_hd_r_a" type="number" class="border p-1 text-center rounded text-xs font-bold" value="1"></div>
                       <div class="grid grid-cols-3 gap-1"><input id="q_hd_s_n" type="number" class="border p-1 text-center rounded text-xs font-bold text-amber-600" value="0"><input id="q_hd_s_m" type="number" class="border p-1 text-center rounded text-xs font-bold text-amber-600" value="0"><input id="q_hd_s_a" type="number" class="border p-1 text-center rounded text-xs font-bold text-amber-600" value="0"></div>
                     </div>
+                </div>
+                <!-- กู้คืนช่องติ้กวันหยุดเพิ่มเติมแบบขยาย -->
+                <div class="mt-4">
+                  <div class="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-widest">ระบุวันหยุดนักขัตฤกษ์ประจำเดือน</div>
+                  <div id="holidayCheck" class="grid grid-cols-8 sm:grid-cols-11 gap-1 p-2 bg-slate-50 border rounded-xl overflow-y-auto max-h-[80px]"></div>
                 </div>
               </div>
               <div class="lg:col-span-3 flex flex-col gap-2 justify-center">
@@ -266,10 +274,10 @@
              <button onclick="clearScheduleUI()" class="bg-rose-50 text-rose-600 px-4 py-2 rounded-lg font-bold text-xs border border-rose-100">ล้างตาราง</button>
           </div>
           <div class="text-center mb-6">
-            <h2 id="table-title">...</h2>
-            <p id="sub-header"></p>
+            <h2 id="table-title" class="font-bold">...</h2>
+            <p id="sub-header" class="font-bold"></p>
           </div>
-          <div class="table-container">
+          <div class="table-container min-h-[300px]">
             <table id="mainTable" class="table-official">
               <thead id="dutyHead"></thead>
               <tbody id="dutyBody"></tbody>
@@ -314,20 +322,12 @@
     const mNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
     const dNames = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
-    // ฟังก์ชันช่วยแสดงผล
     function showProgress(msg = 'กำลังดำเนินการ...') { Swal.fire({ title: msg, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }, showConfirmButton: false, backdrop: 'rgba(15, 23, 42, 0.4)' }); }
     function getShiftColorClass(type) { if(!type) return 'text-normal'; const t = type.toString().toLowerCase().trim(); return (t === 'x' || t === 'vac') ? 'text-rose-500' : 'text-slate-700'; }
     function getCalendarTagColorClass(type) { if(!type) return 'type-red'; const t = type.toString().trim(); if(t.includes('ด')) return 'type-ด'; if(t.includes('ช')) return 'type-ช'; if(t.includes('บ')) return 'type-บ'; return 'type-red'; }
     function getCleanName(fullName) { if(!fullName) return ""; return fullName.replace(/^(นาย|นางสาว|นาง|พยาบาล)\s?/, "").split(" ")[0]; }
 
-    // ฟังก์ชันตั้งค่า Quota
-    function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
-      const ids = ['q_wd_r_n','q_wd_r_m','q_wd_r_a','q_wd_s_n','q_wd_s_m','q_wd_s_a','q_hd_r_n','q_hd_r_m','q_hd_r_a','q_hd_s_n','q_hd_s_m','q_hd_s_a'];
-      const vals = [wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa];
-      ids.forEach((id, i) => { if(document.getElementById(id)) document.getElementById(id).value = vals[i]; });
-    }
-
-    // --- 2. NAVIGATION & TABS ---
+    // --- 2. NAVIGATION ---
     function selectMode(mode) { 
       currentGroup = mode; 
       document.getElementById('mode-overlay').style.display = 'none'; 
@@ -370,18 +370,25 @@
       else if (subMode === 'combined_staff') { currentGroup = 'combined_staff'; switchTab('settings'); }
     }
 
-    // --- 3. DATA & RENDERING ---
+    function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
+      const ids = ['q_wd_r_n','q_wd_r_m','q_wd_r_a','q_wd_s_n','q_wd_s_m','q_wd_s_a','q_hd_r_n','q_hd_r_m','q_hd_r_a','q_hd_s_n','q_hd_s_m','q_hd_s_a'];
+      const vals = [wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa];
+      ids.forEach((id, i) => { if(document.getElementById(id)) document.getElementById(id).value = vals[i]; });
+    }
+
+    // --- 3. DATA LOADING ---
     async function handleMonthYearChange() {
       const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
       if(!mIn || !yIn) return;
       const m = parseInt(mIn.value), y = parseInt(yIn.value), yearBE = y + 543;
       const prevMIdx = (m === 0) ? 11 : m - 1;
       const prevYBE = (m === 0) ? yearBE - 1 : yearBE;
-      
+
       const container = document.querySelector('.table-container');
+      // เพิ่ม Loading Indicator
       const loader = document.createElement('div');
-      loader.id = 'table-loader'; loader.className = 'absolute inset-0 bg-white/70 flex items-center justify-center z-50';
-      loader.innerHTML = '<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>';
+      loader.id = 'table-loader'; loader.className = 'table-loading-overlay';
+      loader.innerHTML = '<div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 mb-4"></div><p class="font-bold text-blue-600">กำลังรวบรวมข้อมูลเวรล่าสุด...</p>';
       container.appendChild(loader);
 
       try {
@@ -418,23 +425,25 @@
           }
         }
 
-        // หัวตารางเวร 2 บรรทัด ตัวหนา ไม่เอียง
+        // หัวเรื่องตารางเวร 2 บรรทัด ตัวหนา ไม่เอียง
         const orderVal = (savedData && savedData.orderNum) ? savedData.orderNum : "........";
         const issuedVal = (savedData && savedData.issuedDate) ? savedData.issuedDate : "..........";
         document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="${orderVal}">/${yearBE} ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value="${issuedVal}"> เดือน ${mNames[prevMIdx]} พ.ศ. ${prevYBE}`;
         let modeText = "สำหรับงานการพยาบาลผู้ป่วยใน";
-        if (currentGroup === 'nurse_p') modeText += "พิเศษปาริฉัตร";
-        else if (currentGroup === 'nurse_m') modeText += "สงฆ์อาพาธ";
-        else if (currentGroup === 'asst') modeText += "พิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ";
-        else modeText += "พิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ";
+        if (currentGroup === 'nurse_p') modeText += "พิเศษปาริฉัตร กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม กลุ่มการพยาบาล";
+        else if (currentGroup === 'nurse_m') modeText += "สงฆ์อาพาธ กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม กลุ่มการพยาบาล";
+        else if (currentGroup === 'asst') modeText += "พิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม กลุ่มการพยาบาล";
+        else modeText += "พิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม กลุ่มการพยาบาล";
         document.getElementById('sub-header').innerHTML = `${modeText} ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
         
         const remarkBox = document.getElementById('scheduleRemark');
         if (remarkBox) { remarkBox.value = (savedData && savedData.remark) ? savedData.remark : getDefaultRemark(); syncPrintRemark(remarkBox.value); }
+        buildHolidayChecks(); // อัปเดตช่องติ้กวันหยุด
         updateWorkDayCount(); renderTable();
       } catch(e) { console.error(e); } finally { if(document.getElementById('table-loader')) document.getElementById('table-loader').remove(); }
     }
 
+    // --- 4. TABLE RENDERING ---
     function renderTable() {
       const head = document.getElementById('dutyHead'), body = document.getElementById('dutyBody');
       if(!head || !body) return;
@@ -491,6 +500,7 @@
         body.innerHTML += row;
       });
 
+      // Footer Summary [cite: 19f9b7.png]
       ['ด','ช','บ','total'].forEach(type => {
         let label = type === 'total' ? 'รวม' : 'ผลัด ' + type;
         let fRow = `<tr class="summary-row"><td colspan="3" class="text-right px-2 sticky-col-1 bg-slate-50 font-black">${label}</td>`;
@@ -513,6 +523,7 @@
       initTableSortable();
     }
 
+    // --- 5. CALENDAR & BOOKING ---
     function renderCalendar() {
       const mIn = document.getElementById('bookMonth'), yIn = document.getElementById('bookYear'), grid = document.getElementById('calendarGrid');
       if(!mIn || !yIn || !grid) return;
@@ -527,11 +538,13 @@
       }
     }
 
+    // --- 6. STAFF MANAGEMENT ---
     async function updateUI() {
       const pList = document.getElementById('primaryStaffList'), sList = document.getElementById('supportStaffList'), select = document.getElementById('staffSelect');
       if(!pList || !sList || !select) return;
       select.innerHTML = '<option value="">-- เลือกชื่อเจ้าหน้าที่ --</option><option value="Admin">🔑 [ADMIN MODE]</option>'; 
       if(appData.staff) appData.staff.forEach(s => select.innerHTML += `<option value="${s[0].trim()}">${s[0]} (${s[1] || 'N/A'})</option>`);
+      
       if (currentGroup === 'combined_staff') {
         showProgress('กำลังโหลดรายชื่อทั้งหมด...');
         const [resP, resM, resA] = await Promise.all([ callAPI('getAppData', 'POST', { group: 'nurse_p' }), callAPI('getAppData', 'POST', { group: 'nurse_m' }), callAPI('getAppData', 'POST', { group: 'asst' }) ]);
@@ -546,7 +559,17 @@
         if(appData.staff) {
           appData.staff.forEach(s => { 
             const n = s[0].trim(), p = s[1] || "N/A", t = (s[2] || "หลัก").trim();
-            const html = `<div class="flex justify-between items-center py-2 hover:bg-slate-50 border-b px-3 group" data-name="${n}"><div class="flex items-center gap-3"><div class="drag-handle text-slate-300">⋮⋮</div><div><p class="font-bold text-slate-800">${n}</p><p class="text-[10px] text-slate-400 font-bold">${p}</p></div></div><div class="flex items-center gap-2"><button onclick="toggleStaffType('${n}', '${t}')" class="btn-animate text-[9px] font-black px-2 py-1 rounded border ${t==='เสริม'?'bg-amber-50 text-amber-700 border-amber-100':'bg-blue-50 text-blue-700 border-blue-100'}">${t}</button><button onclick="delStaff('${n}')" class="text-slate-300 hover:text-rose-500 font-bold text-xs p-1">ลบ</button></div></div>`; 
+            const html = `
+              <div class="flex justify-between items-center py-2 hover:bg-slate-50 border-b px-3 group" data-name="${n}">
+                <div class="flex items-center gap-3">
+                  <div class="drag-handle">⋮⋮</div>
+                  <div><p class="font-bold text-slate-800">${n}</p><p class="text-[10px] text-slate-400 font-bold">${p}</p></div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="toggleStaffType('${n}', '${t}')" class="btn-animate text-[9px] font-black px-2 py-1 rounded border ${t==='เสริม'?'bg-amber-50 text-amber-700 border-amber-100':'bg-blue-50 text-blue-700 border-blue-100'}">${t}</button>
+                  <button onclick="delStaff('${n}')" class="text-slate-300 hover:text-rose-500 font-bold text-xs p-1">ลบ</button>
+                </div>
+              </div>`; 
             if(t === "หลัก") pList.innerHTML += html; else sList.innerHTML += html;
           });
         }
@@ -562,8 +585,14 @@
       sTarget.innerHTML = `<div class="staff-category-header">📋 กลุ่ม ${groupType} - เสริม</div>`;
       const data = window.allStaffData[groupType];
       data.forEach(s => {
+        const name = s[0].trim();
+        const pos = s[1] || 'N/A';
         const type = (s[2] || 'หลัก').trim();
-        const html = `<div class="flex justify-between items-center py-2 px-4 hover:bg-slate-50 border-b"><div><p class="font-bold text-slate-800 text-sm">${s[0]}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${s[1]||'N/A'}</p></div><button onclick="toggleStaffType('${s[0].trim()}', '${type}')" class="text-[9px] font-black px-2 py-1 rounded border ${type==='เสริม'?'bg-amber-50 text-amber-700':'bg-blue-50 text-blue-700'}">${type}</button></div>`;
+        const html = `
+          <div class="flex justify-between items-center py-2 px-4 hover:bg-slate-50 border-b">
+            <div><p class="font-bold text-slate-800 text-sm">${name}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${pos}</p></div>
+            <button onclick="toggleStaffType('${name}', '${type}')" class="text-[9px] font-black px-2 py-1 rounded border ${type==='เสริม'?'bg-amber-50 text-amber-700':'bg-blue-50 text-blue-700'}">${type}</button>
+          </div>`;
         if(type === "หลัก") pTarget.innerHTML += html; else sTarget.innerHTML += html;
       });
     }
@@ -593,35 +622,14 @@
       }
     }
 
-    function printTable() {
-      const table = document.getElementById('mainTable'); if (!table) return;
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
-      const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-      const footer = document.getElementById('print-footer-info');
-      if(footer) { footer.innerText = `พิมพ์จากโปรแกรม SWD SchedulerPro ระบบจัดเวรปฏิบัติราชการ เมื่อวันที่ ${dateStr} เวลา ${timeStr} น.`; footer.style.display = 'block'; }
-      const remarkVal = document.getElementById('scheduleRemark') ? document.getElementById('scheduleRemark').value : "";
-      const display = document.getElementById('printRemarkDisplay');
-      if(display) { display.innerText = remarkVal; display.style.display = 'block'; }
-      window.print();
-    }
-
-    function getDefaultRemark() {
-      const rnRem = "หมายเหตุ : พยาบาลวิชาชีพ ด = 24.00-08.00  ช = 08.00-16.00  บ = 16.00-24.00 ช* บ* ด* = เวรเสริมปาริฉัตร  ชR บR ดR = เวรรีเฟอร์  อ = อบรม";
-      const naRem = "หมายเหตุ : พนักงานช่วยเหลือคนไข้ ด = 24.00-08.00  ช = 08.00-16.00  บ = 16.00-24.00 ช* บ* ด* = เวรเสริม ช5 = ปฏิบัติงานหอสงฆ์อาพาธ";
-      const combRem = "พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรปาริฉัตร ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
-      if (currentGroup === 'asst') return naRem;
-      if (currentGroup === 'combined_rn') return combRem;
-      return rnRem;
-    }
-
+    // --- 7. SYSTEM & UTILS ---
     async function callAPI(action, method = 'POST', data = {}) { try { let options = { method: 'POST', body: JSON.stringify({ action, group: currentGroup, ...data }) }; const response = await fetch(WEB_APP_URL, options); return await response.json(); } catch (err) { return null; } }
     async function refresh(loader = true) { if(loader) showProgress(); const data = await callAPI('getAppData', 'GET'); if (data) { appData = data; updateUI(); renderCalendar(); } if(loader) Swal.close(); }
     function populateSelectors() { const now = new Date(); let nextM = now.getMonth() + 1, targetY = now.getFullYear(); if (nextM > 11) { nextM = 0; targetY++; } document.querySelectorAll('.year-selector').forEach(sel => { sel.innerHTML = `<option value="${now.getFullYear()}">${now.getFullYear() + 543}</option><option value="${now.getFullYear() + 1}">${now.getFullYear() + 544}</option>`; sel.value = targetY; }); ['bookMonth', 'runMonth'].forEach(id => { const el = document.getElementById(id); if(!el) return; el.innerHTML = ""; mNames.forEach((name, i) => el.innerHTML += `<option value="${i}">${name}</option>`); el.value = nextM; }); }
     function updateWorkDayCount() { const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value), daysCount = new Date(y, m + 1, 0).getDate(); let count = 0; for (let d = 1; d <= daysCount; d++) { const day = new Date(y, m, d).getDay(); if (day !== 0 && day !== 6 && !extraH.includes(d.toString().padStart(2, '0'))) count++; } currentWorkDays = count; if(document.getElementById('workDayDisplay')) document.getElementById('workDayDisplay').innerText = `📅 วันปฏิบัติงาน: ${currentWorkDays} วัน`; }
     function buildHolidayChecks() { const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), container = document.getElementById('holidayCheck'); if(!container) return; container.innerHTML = ""; const daysCount = new Date(y, m+1, 0).getDate(); for(let d=1; d<=daysCount; d++) { container.innerHTML += `<label class="px-1.5 border rounded bg-white cursor-pointer hover:bg-blue-50 text-[10px]"><input type="checkbox" onchange="updateWorkDayCount(); renderTable();" value="${d.toString().padStart(2,'0')}" class="extra-h mr-0.5">${d}</label>`; } }
     function constructInitialDraft(m, y, staffNames) { const daysCount = new Date(y, parseInt(m) + 1, 0).getDate(); let skeleton = []; for (let d = 1; d <= daysCount; d++) { const dStr = `${y}-${String(parseInt(m) + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; let dayAssigns = []; staffNames.forEach(name => { const booking = appData.bookings ? appData.bookings.find(b => b.date === dStr && b.name.trim() === name.trim()) : null; dayAssigns.push({ name: name.trim(), type: booking ? booking.type : 'x', isBooked: !!booking }); }); skeleton.push({ date: dStr, assignments: dayAssigns }); } return skeleton; }
-    function initTableSortable() { const el = document.getElementById('dutyBody'); if(sortableTable) sortableTable.destroy(); sortableTable = new Sortable(el, { handle: '.drag-handle', animation: 150, onEnd: () => { activeStaffOrder = Array.from(document.querySelectorAll('#dutyBody tr')).map(tr => tr.getAttribute('data-name')); } }); }
+    function initTableSortable() { const el = document.getElementById('dutyBody'); if(sortableTable) sortableTable.destroy(); sortableTable = new Sortable(el, { handle: '.row-drag-handle', animation: 150, onEnd: () => { activeStaffOrder = Array.from(document.querySelectorAll('#dutyBody tr')).map(tr => tr.getAttribute('data-name')); } }); }
     async function toggleTableSize(expand) { const table = document.getElementById('mainTable'); if (!table) return; table.style.width = expand ? 'max-content' : '100%'; renderTable(); }
     async function handleShiftChange(name, dIdx, el) { let day = currentSchedule[dIdx]; let assign = day.assignments.find(a => a.name.trim() === name.trim()); if(assign) { assign.type = el.value; renderTable(); } }
     async function saveSchedule() { const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value; const remark = document.getElementById('scheduleRemark').value, orderNum = document.getElementById('orderNum') ? document.getElementById('orderNum').value : "", issuedDate = document.getElementById('issuedDate') ? document.getElementById('issuedDate').value : ""; showProgress('กำลังบันทึก...'); await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays, isFinished, staffOrder: activeStaffOrder, remark, orderNum, issuedDate }); Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success'); }
@@ -642,10 +650,36 @@
         if(type) { showProgress('กำลังบันทึก...'); await callAPI('saveBooking', 'POST', { data: {date, name: currentStaff, type} }); refresh(); } 
       } 
     }
+
     async function processAuto() { if (isFinished) return; const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value, q = { wd_r_n: document.getElementById('q_wd_r_n').value, wd_r_m: document.getElementById('q_wd_r_m').value, wd_r_a: document.getElementById('q_wd_r_a').value, wd_s_n: document.getElementById('q_wd_s_n').value, wd_s_m: document.getElementById('q_wd_s_m').value, wd_s_a: document.getElementById('q_wd_s_a').value, hd_r_n: document.getElementById('q_hd_r_n').value, hd_r_m: document.getElementById('q_hd_r_m').value, hd_r_a: document.getElementById('q_hd_r_a').value, hd_s_n: document.getElementById('q_hd_s_n').value, hd_s_m: document.getElementById('q_hd_s_m').value, hd_s_a: document.getElementById('q_hd_s_a').value }; showProgress('AI กำลังจัดเวร...'); const res = await callAPI('generate', 'POST', { month: m, year: y, extraHolidays: [], q, activeStaffNames: activeStaffOrder }); if (res && res.schedule) { currentSchedule = res.schedule; currentTargets = res.targets; renderTable(); } Swal.close(); }
     function exportExcel() { const table = document.getElementById("mainTable"), clone = table.cloneNode(true); Array.from(clone.querySelectorAll('select')).forEach(sel => sel.parentNode.replaceChild(document.createTextNode(sel.value), sel)); XLSX.writeFile(XLSX.utils.table_to_book(clone), `Schedule_${currentGroup}.xlsx`); }
     function copyTableToClipboard() { const table = document.getElementById("mainTable"), clone = table.cloneNode(true); Array.from(clone.querySelectorAll('select')).forEach(sel => sel.parentNode.replaceChild(document.createTextNode(sel.value), sel)); const div = document.createElement('div'); div.style.position = 'absolute'; div.style.left = '-9999px'; div.appendChild(clone); document.body.appendChild(div); const range = document.createRange(); range.selectNode(clone); window.getSelection().removeAllRanges(); window.getSelection().addRange(range); try { document.execCommand('copy'); Swal.fire('คัดลอกสำเร็จ!', '', 'success', {timer: 1000}); } catch (err) {} document.body.removeChild(div); }
     async function openAddSupportModal() { const pool = appData.staff.filter(s => (s[2] || "หลัก").trim() === "เสริม" && !activeStaffOrder.includes(s[0].trim())); if(pool.length === 0) return Swal.fire('ข้อมูล', 'ไม่มีรายชื่อเสริมให้เพิ่ม', 'info'); const opt = {}; pool.forEach(s => opt[s[0].trim()] = s[0]); const { value: name } = await Swal.fire({ title: 'เลือกเจ้าหน้าที่เสริม', input: 'select', inputOptions: opt, showCancelButton: true }); if(name) { activeStaffOrder.push(name); currentSchedule.forEach(day => { if(!day.assignments.find(a => a.name === name)) { const bk = appData.bookings.find(b => b.date === day.date && b.name.trim() === name.trim()); day.assignments.push({ name: name, type: bk ? bk.type : 'x', isBooked: !!bk }); } }); renderTable(); } }
+
+    function printTable() {
+      const table = document.getElementById('mainTable'); if (!table) return;
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+      const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      const footer = document.getElementById('print-footer-info');
+      if(footer) { 
+        footer.innerText = `พิมพ์จากโปรแกรม SWD SchedulerPro ระบบจัดเวรปฏิบัติราชการ เมื่อวันที่ ${dateStr} เวลา ${timeStr} น.`; 
+        footer.style.display = 'block'; 
+      }
+      const remarkVal = document.getElementById('scheduleRemark') ? document.getElementById('scheduleRemark').value : "";
+      const display = document.getElementById('printRemarkDisplay');
+      if(display) { display.innerText = remarkVal; display.style.display = 'block'; }
+      window.print();
+    }
+
+    function getDefaultRemark() {
+      const rnRem = "หมายเหตุ : พยาบาลวิชาชีพ ด = 24.00-08.00  ช = 08.00-16.00  บ = 16.00-24.00 ช* บ* ด* = เวรเสริมปาริฉัตร  ชR บR ดR = เวรรีเฟอร์  อ = อบรม";
+      const naRem = "หมายเหตุ : พนักงานช่วยเหลือคนไข้ ด = 24.00-08.00  ช = 08.00-16.00  บ = 16.00-24.00 ช* บ* ด* = เวรเสริม ช5 = ปฏิบัติงานหอสงฆ์อาพาธ";
+      const combRem = "พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรปาริฉัตร ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
+      if (currentGroup === 'asst') return naRem;
+      if (currentGroup === 'combined_rn') return combRem;
+      return rnRem;
+    }
 
     window.onload = function() { populateSelectors(); };
   </script>
