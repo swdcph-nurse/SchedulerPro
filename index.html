@@ -12,216 +12,149 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <style>
     /* --- 1. พื้นฐานและฟอนต์ --- */
-    body { 
-      font-family: 'Sarabun', sans-serif; 
-      background-color: #f8fafc; 
-      font-size: 13px; 
-      color: #1e293b; 
-      overflow-x: hidden; 
-    }
-
-    /* --- 2. ระบบ Tab และ Animation --- */
-    .tab-content { display: none; }
-    .tab-active { display: block; animation: fadeIn 0.4s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; } }
+    body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 13px; color: #1e293b; overflow-x: hidden; }
     
-    .btn-animate { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-    .btn-animate:hover { transform: translateY(-2px); filter: brightness(1.05); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-    .btn-animate:active { transform: scale(0.95); }
-
-    /* --- 3. โครงสร้างตารางหน้าเว็บ (Web View) --- */
-    .table-container { 
-      overflow: auto; 
-      border-radius: 1rem; 
-      border: 1px solid #e2e8f0; 
-      background: white; 
-      max-width: 100%; 
-      max-height: 75vh; 
-      position: relative; 
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+    /* --- 2. หน้าเริ่มต้นแบบใหม่ (Split Layout) --- */
+    #mode-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      display: flex; flex-direction: row;
+      background: white;
     }
-
-    .table-official { 
-      border-collapse: separate; 
-      border-spacing: 0; 
-      width: max-content; /* ล็อกขนาดคอลัมน์ให้คงที่ตามหน้าเว็บ */
-      table-layout: fixed; 
-      font-size: 10px; 
+    
+    /* ฝั่งซ้าย: พื้นหลังสีน้ำเงิน โลโก้ และชื่อระบบ */
+    .overlay-left {
+      flex: 1.2;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: white; padding: 2rem;
     }
+    .overlay-left img { width: 180px; height: 180px; border-radius: 3rem; background: white; padding: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+    .overlay-left h1 { font-size: 3.5rem; font-weight: 900; margin-top: 2rem; letter-spacing: -2px; }
+    .overlay-left p { font-size: 1.1rem; opacity: 0.9; font-weight: 500; margin-top: 0.5rem; }
+    .overlay-left .hospital-box { margin-top: 3rem; padding: 1.5rem 2rem; border: 1px solid rgba(255,255,255,0.3); border-radius: 1.5rem; background: rgba(255,255,255,0.1); text-align: center; max-width: 80%; line-height: 1.6; }
 
-    .table-official th, .table-official td { 
-      height: 32px; 
-      border-right: 1px solid #e2e8f0; 
-      border-bottom: 1px solid #e2e8f0; 
-      text-align: center; 
-      vertical-align: middle; 
-      white-space: nowrap; 
+    /* ฝั่งขวา: เมนูเลือกโหมดแบบ Stacked List */
+    .overlay-right {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 4rem; background: white;
     }
+    .login-container { width: 100%; max-width: 420px; }
+    .login-container h2 { font-size: 2rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
+    .login-container .subtitle { color: #64748b; font-weight: 500; margin-bottom: 2.5rem; }
 
-    /* กำหนดความกว้างคอลัมน์มาตรฐาน */
-    .col-day, .col-stat { width: 32px !important; min-width: 32px !important; } 
-    .col-total { width: 65px !important; min-width: 65px !important; background: #eff6ff !important; border-left: 1.5px solid #3b82f6 !important; }
-    .col-supp { width: 80px !important; min-width: 80px !important; background: #fff7ed !important; }
-
-    /* คอลัมน์ที่ล็อกไว้ (Sticky) */
-    .sticky-col-1 { position: sticky; left: 0; z-index: 60; background: #ffffff !important; width: 40px !important; box-shadow: inset -1px 0 0 #e2e8f0; }
-    .sticky-col-2 { position: sticky; left: 40px; z-index: 60; background: #ffffff !important; width: 180px !important; text-align: left !important; padding-left: 8px !important; box-shadow: inset -1px 0 0 #e2e8f0; }
-    .sticky-col-3 { position: sticky; left: 220px; z-index: 60; background: #ffffff !important; width: 120px !important; border-right: 2px solid #cbd5e1 !important; }
-
-    thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 85; background: #f1f5f9 !important; font-weight: 800; height: 32px; }
-    thead tr:nth-child(2) th { position: sticky; top: 32px; z-index: 80; background: #f1f5f9 !important; font-weight: 800; height: 32px; }
-
-    /* ช่องเลือกเวร (ตัวหนังสือปกติ ไม่หนา) */
-    .select-shift { 
-      font-size: 12px !important; 
-      font-weight: 500 !important; 
-      appearance: none; 
-      -webkit-appearance: none; 
-      text-align: center; 
-      width: 100%; 
-      background: transparent; 
-      border: none; 
-      cursor: pointer;
+    .mode-item-btn {
+      width: 100%; display: flex; align-items: center; gap: 1rem;
+      padding: 1.25rem; margin-bottom: 1rem; border: 2px solid #f1f5f9;
+      border-radius: 1.25rem; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left; background: white;
     }
+    .mode-item-btn:hover { border-color: #3b82f6; background-color: #eff6ff; transform: translateX(5px); }
+    .mode-item-btn .icon-box { width: 50px; height: 50px; border-radius: 1rem; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: #f8fafc; }
+    .mode-item-btn:hover .icon-box { background: white; }
+    .mode-item-btn .text-box div { font-weight: 800; color: #1e293b; font-size: 14px; }
+    .mode-item-btn .text-box p { font-size: 11px; color: #64748b; font-weight: 600; margin-top: 1px; }
 
-    /* สีพื้นหลังสถานะพิเศษ */
-    .bg-holiday { background-color: #fecaca !important; color: #991b1b !important; font-weight: 700; } 
+    /* --- 3. ตารางและสถิติ (Web View) --- */
+    .table-container { overflow: auto; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; max-width: 100%; max-height: 75vh; position: relative; }
+    .table-official { border-collapse: separate; border-spacing: 0; width: max-content; table-layout: fixed; font-size: 10px; }
+    .table-official th, .table-official td { height: 32px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; text-align: center; vertical-align: middle; white-space: nowrap; }
+    
+    .col-day, .col-stat { width: 32px !important; min-width: 32px !important; }
+    .bg-holiday { background-color: #fecaca !important; color: #991b1b !important; font-weight: 700; }
     .cell-booked { background-color: #bfdbfe !important; outline: 1px solid #3b82f6; outline-offset: -1px; }
+    
+    /* กู้คืนสีตัวอักษรผลรวมรายวัน */
+    .stat-low { color: #e11d48 !important; font-weight: 800; }  /* ต่ำกว่าเกณฑ์ (แดง) */
+    .stat-high { color: #f59e0b !important; font-weight: 800; } /* สูงกว่าเกณฑ์ (ส้ม) */
+    .stat-ok { color: #059669 !important; font-weight: 800; }   /* ตามเกณฑ์ (เขียว) */
 
-    /* --- 4. หน้าแรก (Mode Overlay) --- */
-    #mode-overlay { 
-      position: fixed; inset: 0; 
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
-      z-index: 200; display: flex; align-items: center; justify-content: center; 
-    }
-    .mode-card { 
-      background: white; padding: 3rem 2rem; border-radius: 3rem; 
-      max-width: 1100px; width: 90%; text-align: center; 
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-    }
-
-    /* --- 5. ปฏิทินจองเวร (กู้คืนสีสัน) --- */
-    #tab-booking .calendar-day { 
-      min-height: 120px; padding: 0.5rem; border: 1px solid #e2e8f0; 
-      background: white; transition: all 0.2s;
-    }
-    .day-header { background: #f1f5f9 !important; color: #64748b !important; padding: 10px !important; font-weight: 800 !important; }
-    .tag-booking { 
-      font-size: 11px; padding: 3px 8px; margin-bottom: 3px; border-radius: 6px; 
-      color: white; font-weight: 700; display: flex; justify-content: space-between; 
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .type-ด { background: linear-gradient(135deg, #1e40af, #3b82f6); }
-    .type-ช { background: linear-gradient(135deg, #15803d, #22c55e); }
-    .type-บ { background: linear-gradient(135deg, #b45309, #f59e0b); }
-    .type-red { background: #ef4444 !important; }
-
-    /* --- 6. ช่องพิมพ์หมายเหตุ (สวยงาม) --- */
+    /* --- 4. ช่องหมายเหตุหน้าเว็บ (สวยงาม) --- */
     #scheduleRemark {
       width: 100%; min-height: 110px; padding: 1.25rem; 
       border: 2px solid #fed7aa; border-radius: 1.5rem;
       background-color: #fffaf2; color: #9a3412; font-size: 14px;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); line-height: 1.6; outline: none;
+      line-height: 1.6; outline: none; transition: border-color 0.2s;
     }
-    #scheduleRemark:focus { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+    #scheduleRemark:focus { border-color: #f59e0b; }
 
-    /* --- 7. เมนูย่อย (Sub-Nav) และรายชื่อ --- */
-    .sub-nav { 
-      display: none; justify-content: center; gap: 0.5rem; 
-      margin-bottom: 1rem; background: #f1f5f9; padding: 0.5rem; border-radius: 1rem; 
-    }
-    .sub-nav-active { display: flex !important; }
-    .sub-btn { 
-      padding: 0.5rem 1.5rem; border-radius: 0.75rem; 
-      font-weight: 800; font-size: 11px; transition: all 0.2s; 
-    }
-    .sub-btn-active { background: #3b82f6; color: white; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5); }
-    .staff-category-header { background: #f8fafc; padding: 0.75rem 1rem; border-radius: 1rem; margin-top: 1rem; border-left: 4px solid #3b82f6; }
-
-    /* --- 8. การตั้งค่าสำหรับการพิมพ์ (Print Style) --- */
+    /* --- 5. การตั้งค่าสำหรับการพิมพ์ (Print Style) --- */
     @media print {
       @page { size: A4 landscape; margin: 0.5cm; }
-      body { background: white !important; padding: 0 !important; }
-      
-      /* ตัดเงาและพื้นหลังคอนเทนเนอร์ออกเพื่อให้สะอาด */
-      #report-view { 
-        padding: 0 !important; border: none !important; 
-        box-shadow: none !important; background: transparent !important; margin: 0 !important;
-      }
-      
-      .no-print, header, nav, .swal2-container, button, #scheduleRemark, label { display: none !important; }
-      
-      /* จัดการตารางให้พิมพ์ครบทุกคอลัมน์ในหน้าเดียว */
+      body { background: white !important; }
+      .no-print, header, nav, button, #scheduleRemark, label { display: none !important; }
       .table-container { overflow: visible !important; max-height: none !important; border: none !important; width: 100% !important; }
-      .table-official { 
-        width: 100% !important; table-layout: fixed !important; 
-        border: 0.5pt solid black !important; font-size: 7.2pt !important; 
-      }
-      
-      /* ย่อขนาดคอลัมน์เฉพาะตอนพิมพ์ */
-      .sticky-col-1 { width: 25px !important; }
-      .sticky-col-2 { width: 110px !important; }
-      .sticky-col-3 { width: 85px !important; }
-      .col-day, .col-stat { width: auto !important; }
-      .col-total, .col-supp { width: 35px !important; }
-
-      .table-official th, .table-official td { 
-        border: 0.5pt solid black !important; color: black !important; 
-        padding: 1pt !important; height: auto !important; background: white !important; 
-      }
-      
-      .select-shift { font-size: 7.5pt !important; font-weight: normal !important; color: black !important; }
-      
-      /* บังคับพิมพ์สีพื้นหลัง (Mark สีทึบ) */
+      .table-official { width: 100% !important; table-layout: fixed !important; border: 0.5pt solid black !important; font-size: 7.2pt !important; }
+      .table-official th, .table-official td { border: 0.5pt solid black !important; padding: 1pt !important; background: white !important; }
       .bg-holiday { background-color: #fecaca !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .cell-booked { background-color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      
-      .sticky-col-1, .sticky-col-2, .sticky-col-3, thead th { position: static !important; box-shadow: none !important; }
-      #printRemarkDisplay { display: block !important; width: 100% !important; white-space: pre-wrap !important; font-size: 10pt !important; margin-top: 10px !important; text-align: left !important; border: none !important; }
-      
-      .print-footer { display: block !important; position: fixed; bottom: 0; right: 0; width: 100%; text-align: right; font-size: 8pt; color: #64748b; }
+      #printRemarkDisplay { display: block !important; width: 100% !important; font-size: 10pt !important; margin-top: 15px !important; }
+      .print-footer { display: block !important; position: fixed; bottom: 5px; right: 5px; font-size: 8pt; color: #64748b; }
     }
+
+    /* อื่นๆ */
+    .sub-nav { display: none; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; background: #f1f5f9; padding: 0.5rem; border-radius: 1rem; }
+    .sub-nav-active { display: flex !important; }
+    .sub-btn { padding: 0.5rem 1.5rem; border-radius: 0.75rem; font-weight: 800; font-size: 11px; color: #64748b; }
+    .sub-btn-active { background: #3b82f6; color: white; }
+    .staff-category-header { background: #f8fafc; padding: 0.75rem 1rem; border-radius: 1rem; margin: 1rem 0; border-left: 4px solid #3b82f6; }
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
 
   <div id="mode-overlay">
-  <div class="mode-card">
-    <div class="flex flex-col items-center mb-10">
-      <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" class="w-20 h-20 rounded-3xl shadow-md mb-4">
-      <h1 class="text-4xl font-black text-slate-800 tracking-tight">SWD Scheduler <span class="text-blue-600">Pro</span></h1>
-      <p class="text-slate-400 mt-2 font-bold uppercase tracking-widest text-xs">กรุณาเลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
+  <div class="overlay-left">
+    <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" alt="Logo">
+    <h1>SWD Scheduler <span style="color: #bfdbfe;">Pro</span></h1>
+    <p>ระบบจัดเวรปฏิบัติราชการอัจฉริยะ</p>
+    <div class="hospital-box">
+      กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม กลุ่มการพยาบาล<br>
+      โรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน
     </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 px-4">
-      <button onclick="selectMode('nurse_p')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-indigo-500 hover:bg-indigo-50 flex flex-col items-center gap-4">
-        <div class="text-5xl">👩‍⚕️</div>
-        <div>
-          <div class="font-black text-slate-800 text-lg">พยาบาลวิชาชีพ</div>
-          <p class="text-[11px] text-indigo-500 font-black mt-1">(พิเศษปาริฉัตร)</p>
-        </div>
-      </button>
-      <button onclick="selectMode('nurse_m')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-amber-500 hover:bg-amber-50 flex flex-col items-center gap-4">
-        <div class="text-5xl">👨‍⚕️</div>
-        <div>
-          <div class="font-black text-slate-800 text-lg">พยาบาลวิชาชีพ</div>
-          <p class="text-[11px] text-amber-600 font-black mt-1">(สงฆ์อาพาธ)</p>
-        </div>
-      </button>
-      <button onclick="selectMode('asst')" class="btn-animate group p-8 border-2 border-slate-100 rounded-[2.5rem] hover:border-blue-500 hover:bg-blue-50 flex flex-col items-center gap-4">
-        <div class="text-5xl">🏥</div>
-        <div>
-          <div class="font-black text-slate-800 text-lg">พนักงานช่วยเหลือคนไข้</div>
-          <p class="text-[11px] text-blue-500 font-black mt-1">(NA/Asst)</p>
-        </div>
-      </button>
-      <button onclick="selectMode('combined')" class="btn-animate group p-5 border-2 border-purple-100 rounded-[2rem] hover:border-purple-500 hover:bg-purple-50 flex flex-col items-center gap-3">
-          <div class="text-4xl">📊</div>
-          <div class="text-center">
-            <div class="font-black text-slate-800 text-sm leading-tight">ตารางเวรรวม</div>
-            <p class="text-[10px] text-purple-500 font-bold uppercase tracking-widest mt-1">(RN + NA/Asst พิเศษปาริฉัตร-สงฆ์)</p>
+  </div>
+
+  <div class="overlay-right">
+    <div class="login-container">
+      <h2>ยินดีต้อนรับ</h2>
+      <p class="subtitle">กรุณาเลือกประเภทผู้ปฏิบัติงานเพื่อเข้าสู่ระบบ</p>
+      
+      <div class="flex flex-col gap-2">
+        <button onclick="selectMode('nurse_p')" class="mode-item-btn">
+          <div class="icon-box">👩‍⚕️</div>
+          <div class="text-box">
+            <div>พยาบาลวิชาชีพ</div>
+            <p>หอผู้ป่วยในพิเศษปาริฉัตร</p>
           </div>
         </button>
+
+        <button onclick="selectMode('nurse_m')" class="mode-item-btn">
+          <div class="icon-box">👨‍⚕️</div>
+          <div class="text-box">
+            <div>พยาบาลวิชาชีพ</div>
+            <p>หอสงฆ์อาพาธ</p>
+          </div>
+        </button>
+
+        <button onclick="selectMode('asst')" class="mode-item-btn">
+          <div class="icon-box">🏥</div>
+          <div class="text-box">
+            <div>พนักงานช่วยเหลือคนไข้</div>
+            <p>พนักงานช่วยเหลือคนไข้ (NA / Asst)</p>
+          </div>
+        </button>
+
+        <button onclick="selectMode('combined')" class="mode-item-btn" style="border-color: #e9d5ff;">
+          <div class="icon-box" style="background: #fdf4ff;">📊</div>
+          <div class="text-box">
+            <div>ตารางเวรรวม</div>
+            <p>RN + NA รวมพิเศษปาริฉัตร-สงฆ์</p>
+          </div>
+        </button>
+      </div>
+      
+      <p class="text-center text-[10px] text-slate-400 mt-10">© 2026 Develop By NatnarinTh IT nurse</p>
     </div>
   </div>
 </div>
@@ -401,12 +334,37 @@
 
     // --- 2. STAFF & UI LOGIC ---
 
-    async function toggleStaffType(name, oldType) {
-      showProgress('กำลังเปลี่ยนประเภท...');
-      await callAPI('manageStaff', 'POST', { subAction: 'updateType', data: { name, type: oldType === 'หลัก' ? 'เสริม' : 'หลัก' } });
-      await refresh(false);
-      Swal.close();
+    /**
+ * เปลี่ยนประเภทพนักงาน (หลัก <-> เสริม)
+ * แก้ไข: ส่ง subAction 'updateType' ไปยัง Backend
+ */
+async function toggleStaffType(name, oldType) {
+  const newType = (oldType === 'หลัก') ? 'เสริม' : 'หลัก';
+  
+  // แสดงสถานะการโหลด
+  showProgress(`กำลังเปลี่ยนเป็นพนักงาน${newType}...`);
+  
+  try {
+    const result = await callAPI('manageStaff', 'POST', { 
+      subAction: 'updateType', 
+      data: { name: name, type: newType } 
+    });
+    
+    if (result) {
+      // โหลดข้อมูลรายชื่อใหม่และวาด UI ใหม่ทันที
+      await refresh(false); 
+      Swal.fire({
+        title: 'สำเร็จ',
+        text: `เปลี่ยนประเภทของ ${name} เรียบร้อยแล้ว`,
+        icon: 'success',
+        timer: 1000,
+        showConfirmButton: false
+      });
     }
+  } catch (err) {
+    Swal.fire('ผิดพลาด', 'ไม่สามารถเปลี่ยนประเภทได้: ' + err, 'error');
+  }
+}
 
     async function addStaff() {
       const n = document.getElementById('inName').value.trim(), p = document.getElementById('inPos').value.trim(), t = document.getElementById('inType').value;
@@ -605,11 +563,9 @@ function syncPrintRemark(val) {
  async function handleMonthYearChange() {
   const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
   if(!mIn || !yIn) return;
-  
   const container = document.querySelector('.table-container');
   const loader = document.createElement('div');
-  loader.id = 'table-loader';
-  loader.className = 'table-loading-overlay';
+  loader.id = 'table-loader'; loader.className = 'table-loading-overlay';
   loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังรวบรวมข้อมูลเวรล่าสุด...</p></div>';
   container.appendChild(loader);
 
@@ -621,64 +577,45 @@ function syncPrintRemark(val) {
     const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
 
     if (currentGroup === 'combined_rn') {
-      // 1. ดึงข้อมูลพื้นฐาน (พนักงาน + จองเวร) จากทั้ง 2 ตึก [cite: 14, 15]
+      // --- โหมดพิเศษ: ตารางเวร RN รวม ---
       const [resP, resM] = await Promise.all([
         callAPI('getAppData', 'POST', { group: 'nurse_p' }),
         callAPI('getAppData', 'POST', { group: 'nurse_m' })
       ]);
-      
-      // เก็บข้อมูล AppData รวม เพื่อใช้หาเวรจองใน constructInitialDraft
       appData.staff = [...resP.staff, ...resM.staff];
       appData.bookings = [...resP.bookings, ...resM.bookings];
       activeStaffOrder = appData.staff.map(s => s[0].trim());
 
-      // 2. ดึงตารางที่จัดเสร็จและบันทึกไว้ล่าสุด [cite: 6, 18]
       const [savedP, savedM] = await Promise.all([
         callAPI('loadSchedule', 'POST', { month: m, year: y, group: 'nurse_p' }),
         callAPI('loadSchedule', 'POST', { month: m, year: y, group: 'nurse_m' })
       ]);
 
-      // 3. สร้างร่างตารางที่มี 'เวรจอง' เป็นพื้นฐาน (ถ้าไม่มีจองจะเป็น x) [cite: 15]
       const combinedSched = constructInitialDraft(m, y, activeStaffOrder);
-
-      // 4. นำเวรที่ 'จัดแล้ว' มาทับร่างตาราง [cite: 18, 19]
       [savedP, savedM].forEach(saved => {
-        if (saved && saved.schedule && Array.isArray(saved.schedule)) {
+        if (saved && saved.schedule) {
           saved.schedule.forEach((savedDay, dIdx) => {
-            // ป้องกัน Bug: ตรวจสอบว่าวันที่ในตารางรวมมีอยู่จริง
-            if (combinedSched[dIdx] && savedDay.assignments) {
+            if (combinedSched[dIdx]) {
               savedDay.assignments.forEach(assign => {
                 let target = combinedSched[dIdx].assignments.find(a => a.name.trim() === assign.name.trim());
-                // นำเวรที่จัดแล้วมาใส่ (ถ้าเวรที่จัดเป็น x ระบบจะคงค่าเดิมหรือ x ไว้)
-                if (target && assign.type !== 'x') { 
-                  target.type = assign.type; 
-                  target.isBooked = assign.isBooked; 
-                }
+                if (target && assign.type !== 'x') { target.type = assign.type; target.isBooked = assign.isBooked; }
               });
             }
           });
         }
       });
-      
       currentSchedule = combinedSched;
-      isFinished = false;
-
-      // หัวเรื่องเลียนแบบโหมด NA [cite: 22]
-      document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="........">/${yearBE}`;
-      document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value=".........."> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
-      
+      document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ ......../2569`;
+      document.getElementById('sub-header').innerHTML = `ลงวันที่ .......... เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
       const remarkBox = document.getElementById('scheduleRemark');
       if (remarkBox) { remarkBox.value = getDefaultRemark(); syncPrintRemark(remarkBox.value); }
-
     } else {
-      // --- โหมดปกติ (nurse_p, nurse_m, asst) --- [cite: 6, 18, 22]
+      // --- โหมดปกติ ---
       await refresh(false); 
       const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
-      
-      // ... (โค้ดจัดการหัวเรื่องและข้อมูลเดิมของคุณ) ...
-      const currentOrder = (savedData && savedData.orderNum) ? savedData.orderNum : "........";
-      document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="${currentOrder}">/${yearBE}`;
-      
+      // ... ตั้งค่าหัวเรื่องตามโหมด (ปาริฉัตร/สงฆ์/NA) ...
+      const remarkBox = document.getElementById('scheduleRemark');
+      if (remarkBox) { remarkBox.value = (savedData && savedData.remark) ? savedData.remark : getDefaultRemark(); syncPrintRemark(remarkBox.value); }
       if (savedData && savedData.schedule) { 
         activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
         currentSchedule = savedData.schedule; 
@@ -687,16 +624,8 @@ function syncPrintRemark(val) {
         currentSchedule = constructInitialDraft(m, y, activeStaffOrder); 
       }
     }
-    
-    updateWorkDayCount(); 
-    renderTable();
-    
-  } catch (err) {
-    console.error(err);
-    Swal.fire('Error', 'เกิดข้อผิดพลาดในการรวมข้อมูล: ' + err.message, 'error');
-  } finally {
-    if(document.getElementById('table-loader')) document.getElementById('table-loader').remove();
-  }
+    updateWorkDayCount(); renderTable();
+  } finally { if(document.getElementById('table-loader')) document.getElementById('table-loader').remove(); }
 }
     // ฟังก์ชันช่วยคืนค่าหมายเหตุเริ่มต้นตามโหมด
     function getDefaultRemark() {
@@ -719,16 +648,15 @@ function selectMode(mode) {
   const mainNav = document.querySelector('header nav'); 
   
   if (mode === 'combined') {
-    // โหมดตารางรวม: แสดงเมนูย่อย (.sub-nav) และซ่อนเมนูหลัก (nav)
+    // เข้าสู่โหมดรวม: แสดงเมนูย่อย 1,2,3 และซ่อนเมนูเดิม
     if(subNav) subNav.classList.add('sub-nav-active');
     if(mainNav) mainNav.style.display = 'none';
     switchSubTab('combined_rn'); 
   } else {
-    // โหมดปกติ: ซ่อนเมนูย่อย และแสดงเมนูหลัก
+    // เข้าสู่โหมดปกติ: ซ่อนเมนูย่อย และแสดงเมนู จอง/จัด/รายชื่อ
     if(subNav) subNav.classList.remove('sub-nav-active');
     if(mainNav) mainNav.style.display = 'flex';
     
-    // ตั้งค่า Quota และ Label ตามโหมดที่เลือก (NurseP, NurseM, Asst)
     if (mode === 'nurse_p') {
       document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
       setQuotas(1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
@@ -739,10 +667,7 @@ function selectMode(mode) {
       document.getElementById('role-label').innerText = 'พนักงานช่วยเหลือคนไข้';
       setQuotas(1, 3, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1);
     }
-
-    populateSelectors(); 
-    initSortable(); 
-    handleMonthYearChange(); 
+    populateSelectors(); handleMonthYearChange(); 
   }
 }
 
@@ -784,23 +709,15 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
  */
 async function updateUI() {
   const pList = document.getElementById('primaryStaffList'), 
-        sList = document.getElementById('supportStaffList'), 
+        sList = document.getElementById('supportStaffList'),
         select = document.getElementById('staffSelect');
   if(!pList || !sList || !select) return;
 
-  // 1. อัปเดตรายชื่อใน Dropdown (แสดงชื่อคู่กับตำแหน่งเสมอ)
   select.innerHTML = '<option value="">-- เลือกชื่อเจ้าหน้าที่ --</option><option value="Admin">🔑 [ADMIN MODE]</option>'; 
-  if(appData.staff) {
-    appData.staff.forEach(s => {
-      // รูปแบบ: ชื่อ (ตำแหน่ง)
-      select.innerHTML += `<option value="${s[0].trim()}">${s[0]} (${s[1] || 'ตำแหน่ง N/A'})</option>`;
-    });
-  }
+  if(appData.staff) appData.staff.forEach(s => select.innerHTML += `<option value="${s[0].trim()}">${s[0]} (${s[1] || 'N/A'})</option>`);
 
-  // 2. จัดการส่วนแสดงรายชื่อในหน้า Settings (จัดการรายชื่อ)
   if (currentGroup === 'combined_staff') {
-    // --- กรณีโหมดตารางรวม: ดึงข้อมูลจากทุกฐานข้อมูลมาแสดง ---
-    showProgress('กำลังรวบรวมรายชื่อพนักงานทั้งหมด...');
+    showProgress('กำลังโหลดรายชื่อพนักงานทั้งหมด...');
     const [resP, resM, resA] = await Promise.all([
       callAPI('getAppData', 'POST', { group: 'nurse_p' }),
       callAPI('getAppData', 'POST', { group: 'nurse_m' }),
@@ -808,49 +725,21 @@ async function updateUI() {
     ]);
     Swal.close();
 
-    // เก็บข้อมูลไว้ในตัวแปร Global ชั่วคราวเพื่อใช้สลับการแสดงผล
-    window.allStaffData = { 
-      RN: [...resP.staff, ...resM.staff], 
-      NA: resA.staff 
-    };
-
-    // สร้างเมนูเลือกกลุ่มการจัดการ (RN / NA)
-    pList.innerHTML = `
-      <div class="flex gap-2 mb-6 no-print justify-center w-full">
-        <button onclick="renderStaffGroup('RN')" id="btn-mgr-rn" class="sub-btn sub-btn-active">จัดการพยาบาลวิชาชีพ (RN)</button>
-        <button onclick="renderStaffGroup('NA')" id="btn-mgr-na" class="sub-btn">จัดการพนักงานช่วยเหลือคนไข้ (NA)</button>
-      </div>
-      <div id="mgr-content-primary"></div>`;
-    
+    window.allStaffData = { RN: [...resP.staff, ...resM.staff], NA: resA.staff };
+    pList.innerHTML = `<div class="flex gap-2 mb-6 no-print justify-center w-full">
+        <button onclick="renderStaffGroup('RN')" id="btn-mgr-rn" class="sub-btn sub-btn-active">จัดการ RN ทั้งหมด</button>
+        <button onclick="renderStaffGroup('NA')" id="btn-mgr-na" class="sub-btn">จัดการ NA ทั้งหมด</button>
+      </div><div id="mgr-content-primary"></div>`;
     sList.innerHTML = `<div id="mgr-content-support"></div>`;
-
-    // เริ่มต้นแสดงกลุ่ม RN เป็นอันดับแรก
     renderStaffGroup('RN');
-
   } else {
-    // --- กรณีโหมดปกติ (รายชื่อเฉพาะตึก) ---
+    // โหมดปกติ: แสดงรายชื่อกลุ่มที่เลือก พร้อมระบุตำแหน่ง
     pList.innerHTML = ""; sList.innerHTML = "";
-    if(appData.staff) {
-      appData.staff.forEach(s => { 
-        const name = s[0].trim(), pos = s[1] || "ตำแหน่ง N/A", type = (s[2] || "หลัก").trim();
-        const html = `
-          <div class="flex justify-between items-center py-2 hover:bg-slate-50 transition-all rounded-xl px-3 group" data-name="${name}" data-pos="${pos}" data-type="${type}">
-            <div class="flex items-center gap-3">
-              <div class="drag-handle text-slate-300 cursor-grab">⋮⋮</div>
-              <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-400">${name.charAt(0)}</div>
-              <div>
-                <p class="font-bold text-slate-800 text-sm">${name}</p>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">${pos}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button onclick="toggleStaffType('${name}', '${type}')" class="btn-animate text-[9px] font-black px-2 py-1 rounded border ${type==='เสริม'?'bg-amber-50 text-amber-700 border-amber-100':'bg-blue-50 text-blue-700 border-blue-100'}">${type}</button>
-              <button onclick="delStaff('${name}')" class="text-slate-300 hover:text-rose-500 font-bold text-xs p-1">ลบ</button>
-            </div>
-          </div>`; 
-        if(type === "หลัก") pList.innerHTML += html; else sList.innerHTML += html;
-      });
-    }
+    if(appData.staff) appData.staff.forEach(s => { 
+      const name = s[0].trim(), pos = s[1] || "N/A", type = (s[2] || "หลัก").trim();
+      const html = `<div class="flex justify-between items-center py-2 hover:bg-slate-50 transition-all rounded-xl px-3 group" data-name="${name}" data-pos="${pos}" data-type="${type}"><div class="flex items-center gap-3"><div class="drag-handle text-slate-300">⋮⋮</div><div><p class="font-bold text-slate-800 text-sm">${name}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${pos}</p></div></div><div class="flex items-center gap-2"><button onclick="toggleStaffType('${name}', '${type}')" class="btn-animate text-[9px] font-black px-2 py-1 rounded border ${type==='เสริม'?'bg-amber-50 text-amber-700':'bg-blue-50 text-blue-700'}">${type}</button><button onclick="delStaff('${name}')" class="text-slate-300 hover:text-rose-500 font-bold text-xs p-1">ลบ</button></div></div>`; 
+      if(type === "หลัก") pList.innerHTML += html; else sList.innerHTML += html;
+    });
   }
 }
     /**
@@ -967,19 +856,19 @@ function renderStaffGroup(groupType) {
     function exportExcel() { const table = document.getElementById("mainTable"), clone = table.cloneNode(true); Array.from(clone.querySelectorAll('select')).forEach(sel => sel.parentNode.replaceChild(document.createTextNode(sel.value), sel)); XLSX.writeFile(XLSX.utils.table_to_book(clone), `Shift_Schedule_${currentGroup}.xlsx`); }
     function copyTableToClipboard() { const table = document.getElementById("mainTable"), clone = table.cloneNode(true); Array.from(clone.querySelectorAll('select')).forEach(sel => sel.parentNode.replaceChild(document.createTextNode(sel.value), sel)); const div = document.createElement('div'); div.style.position = 'absolute'; div.style.left = '-9999px'; div.appendChild(clone); document.body.appendChild(div); const range = document.createRange(); range.selectNode(clone); window.getSelection().removeAllRanges(); window.getSelection().addRange(range); try { document.execCommand('copy'); Swal.fire('คัดลอกสำเร็จ!', '', 'success', {timer: 1000}); } catch (err) {} document.body.removeChild(div); }
 
-    function printTable() {
+  function printTable() {
+  const table = document.getElementById('mainTable');
+  if (!table) return;
   const now = new Date();
   const dateStr = now.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
   const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
   
-  // สร้าง Footer สำหรับพิมพ์
   const footer = document.getElementById('print-footer-info') || document.createElement('div');
-  footer.id = 'print-footer-info';
-  footer.className = 'print-footer';
+  footer.id = 'print-footer-info'; footer.className = 'print-footer';
   footer.innerText = `พิมพ์จากโปรแกรม SWD SchedulerPro ระบบจัดเวรปฏิบัติราชการ เมื่อวันที่ ${dateStr} เวลา ${timeStr} น.`;
   document.body.appendChild(footer);
 
-  // สั่งพิมพ์ (รองรับทั้ง Mobile/PC)
+  if (document.getElementById('scheduleRemark')) syncPrintRemark(document.getElementById('scheduleRemark').value);
   window.print();
 }
     
