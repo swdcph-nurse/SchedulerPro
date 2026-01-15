@@ -199,7 +199,7 @@
       transition: all 0.2s;
     }
     #scheduleRemark:focus { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
-    sub-nav { 
+    .sub-nav { 
       display: none; 
       justify-content: center; 
       gap: 0.5rem; 
@@ -681,7 +681,7 @@ function syncPrintRemark(val) {
   const loader = document.createElement('div');
   loader.id = 'table-loader';
   loader.className = 'table-loading-overlay';
-  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังประมวลผลข้อมูลรวม...</p></div>';
+  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังประมวลผลข้อมูล...</p></div>';
   container.appendChild(loader);
 
   try {
@@ -692,7 +692,7 @@ function syncPrintRemark(val) {
     const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
 
     if (currentGroup === 'combined_rn') {
-      // --- โหมดพิเศษ: ตารางเวร RN รวม (ดึงข้อมูลจาก 2 ฐานข้อมูล) ---
+      // --- โหมดพิเศษ: ตารางเวร RN รวม ---
       const [resP, resM] = await Promise.all([
         callAPI('getAppData', 'POST', { group: 'nurse_p' }),
         callAPI('getAppData', 'POST', { group: 'nurse_m' })
@@ -703,17 +703,15 @@ function syncPrintRemark(val) {
         callAPI('loadSchedule', 'POST', { month: m, year: y, group: 'nurse_m' })
       ]);
 
-      // รวมรายชื่อ RN ทั้งหมด
       appData.staff = [...resP.staff, ...resM.staff];
       activeStaffOrder = appData.staff.map(s => s[0].trim());
       
-      // สร้างร่างตารางและหยอดข้อมูลเวรจากทั้ง 2 ตึก
       const combinedSched = constructInitialDraft(m, y, activeStaffOrder);
       [savedP, savedM].forEach(saved => {
         if (saved && saved.schedule) {
           saved.schedule.forEach((day, dIdx) => {
             day.assignments.forEach(assign => {
-              let target = combinedSched[dIdx].assignments.find(a => a.name === assign.name);
+              let target = combinedSched[dIdx].assignments.find(a => a.name.trim() === assign.name.trim());
               if (target) { target.type = assign.type; target.isBooked = assign.isBooked; }
             });
           });
@@ -721,17 +719,14 @@ function syncPrintRemark(val) {
       });
       
       currentSchedule = combinedSched;
-      isFinished = false;
-
-      // ตั้งค่าหัวเรื่องเลียนแบบโหมดพนักงานช่วยเหลือคนไข้ (NA)
       document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="........">/${yearBE}`;
-      document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value=".........."> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+      document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value=".........."> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
       
       const remarkBox = document.getElementById('scheduleRemark');
-      if (remarkBox) { remarkBox.value = (savedP && savedP.remark) ? savedP.remark : getDefaultRemark(); syncPrintRemark(remarkBox.value); }
+      if (remarkBox) { remarkBox.value = getDefaultRemark(); syncPrintRemark(remarkBox.value); }
 
     } else {
-      // --- โหมดปกติ (nurse_p, nurse_m, asst) ---
+      // --- โหมดปกติ ---
       await refresh(false); 
       const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
       
@@ -739,11 +734,14 @@ function syncPrintRemark(val) {
       document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="${currentOrder}">/${yearBE}`;
       
       const currentDate = (savedData && savedData.issuedDate) ? savedData.issuedDate : "..........";
-      let modeText = (currentGroup === 'nurse_p') ? `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร` : (currentGroup === 'nurse_m') ? `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ` : `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ`;
+      let modeText = (currentGroup === 'nurse_p') ? `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร` : (currentGroup === 'nurse_m') ? `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ` : `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และสงฆ์อาพาธ`;
       document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value="${currentDate}"> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>${modeText} ${commonSuffix} ${monthYearText}`;
 
       const remarkBox = document.getElementById('scheduleRemark');
-      if (remarkBox) { remarkBox.value = (savedData && savedData.remark) ? savedData.remark : getDefaultRemark(); syncPrintRemark(remarkBox.value); }
+      if (remarkBox) {
+        remarkBox.value = (savedData && savedData.remark && savedData.remark.trim() !== "") ? savedData.remark : getDefaultRemark();
+        syncPrintRemark(remarkBox.value);
+      }
 
       if (savedData && savedData.schedule) { 
         activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
@@ -775,30 +773,34 @@ function selectMode(mode) {
   document.getElementById('main-ui').style.display = 'block'; 
   
   const subNav = document.getElementById('combined-sub-nav');
+  const mainNav = document.querySelector('header nav'); // แถบเมนู จองเวร/จัดตาราง/รายชื่อ
   
   if (mode === 'combined') {
-    // แสดงเมนูย่อยและเข้าสู่เมนูที่ 1 (ตาราง RN รวม) ทันที
+    // โหมดตารางรวม: แสดงเมนูย่อย และซ่อนเมนูหลักของระบบเดิม
     subNav.classList.add('sub-nav-active');
+    if(mainNav) mainNav.style.display = 'none';
     switchSubTab('combined_rn'); 
   } else {
-    // โหมดปกติ: ซ่อนเมนูย่อยและตั้งค่าโหมดเดิม
+    // โหมดปกติ: ซ่อนเมนูย่อย และแสดงเมนูหลัก
     subNav.classList.remove('sub-nav-active');
+    if(mainNav) mainNav.style.display = 'flex';
     
     if (mode === 'nurse_p') {
       document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
-      setQuotas(1,2,1, 1,1,1, 1,1,1, 1,1,1);
+      setQuotas(1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
     } else if (mode === 'nurse_m') {
       document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)';
-      setQuotas(1,1,1, 0,0,0, 1,1,1, 0,0,0);
+      setQuotas(1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0);
     } else {
       document.getElementById('role-label').innerText = 'พนักงานช่วยเหลือคนไข้';
-      setQuotas(1,3,1, 1,0,1, 1,1,1, 1,1,1);
+      setQuotas(1, 3, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1);
     }
 
     populateSelectors(); 
     initSortable(); 
     handleMonthYearChange(); 
   }
+}
 }
 
 // ฟังก์ชันตั้งค่าอัตรากำลัง (Quota)
@@ -833,7 +835,7 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
   }
 }
 
-   async function updateUI() {
+ async function updateUI() {
   const pList = document.getElementById('primaryStaffList'), 
         sList = document.getElementById('supportStaffList'), 
         select = document.getElementById('staffSelect');
@@ -843,13 +845,12 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
   select.innerHTML = '<option value="">-- เลือกชื่อเจ้าหน้าที่ --</option><option value="Admin">🔑 [ADMIN MODE]</option>'; 
   if(appData.staff) {
     appData.staff.forEach(s => {
-      select.innerHTML += `<option value="${s[0].trim()}">${s[0]} (${s[1] || 'ตำแหน่ง N/A'})</option>`;
+      select.innerHTML += `<option value="${s[0].trim()}">${s[0]} (${s[1] || 'N/A'})</option>`;
     });
   }
 
   // 2. แสดงรายชื่อในหน้าจัดการ
   if (currentGroup === 'combined_staff') {
-    // โหมดตารางรวม: แยกกลุ่ม RN และ NA
     const [resP, resM, resA] = await Promise.all([
       callAPI('getAppData', 'POST', { group: 'nurse_p' }),
       callAPI('getAppData', 'POST', { group: 'nurse_m' }),
@@ -874,9 +875,8 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
         <span class="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-black border border-blue-100">NA</span>
       </div>`;
     });
-
   } else {
-    // โหมดปกติ: แสดงรายชื่อตามกลุ่มที่เลือก
+    // โหมดปกติ: แสดงรายชื่อกลุ่มที่เลือก พร้อมระบุตำแหน่ง
     pList.innerHTML = ""; sList.innerHTML = "";
     if(appData.staff) {
       appData.staff.forEach(s => { 
