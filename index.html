@@ -289,11 +289,16 @@
         </nav>
       </div>
     </header>
-    <div id="combined-sub-nav" class="sub-nav no-print">
-        <button onclick="switchSubTab('combined_rn')" id="sub-combined-rn" class="sub-btn sub-btn-active">1) ตารางเวร RN</button>
-        <button onclick="switchSubTab('combined_na')" id="sub-combined-na" class="sub-btn">2) ตารางเวร NA</button>
-        <button onclick="switchSubTab('combined_staff')" id="sub-combined-staff" class="sub-btn">3) จัดการรายชื่อ</button>
-    </div>
+    <div id="combined-sub-nav" class="sub-nav no-print items-center">
+    <button onclick="location.reload()" class="bg-white text-slate-500 p-2 rounded-xl mr-2 hover:text-rose-500 transition-colors shadow-sm border border-slate-200">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+      </svg>
+    </button>
+    <button onclick="switchSubTab('combined_rn')" id="sub-combined-rn" class="sub-btn sub-btn-active">1) ตารางเวร RN รวม</button>
+    <button onclick="switchSubTab('combined_na')" id="sub-combined-na" class="sub-btn">2) ตารางเวร NA</button>
+    <button onclick="switchSubTab('combined_staff')" id="sub-combined-staff" class="sub-btn">3) จัดการรายชื่อทั้งหมด</button>
+</div>
 
     <main class="max-w-[98%] mx-auto px-2 pb-12">
       <!-- Tab จองเวร -->
@@ -681,7 +686,7 @@ function syncPrintRemark(val) {
   const loader = document.createElement('div');
   loader.id = 'table-loader';
   loader.className = 'table-loading-overlay';
-  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังประมวลผลข้อมูล...</p></div>';
+  loader.innerHTML = '<div class="flex flex-col items-center gap-2"><div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p class="text-xs font-black text-blue-600">กำลังรวบรวมข้อมูลเวรล่าสุด...</p></div>';
   container.appendChild(loader);
 
   try {
@@ -692,57 +697,64 @@ function syncPrintRemark(val) {
     const monthYearText = `ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
 
     if (currentGroup === 'combined_rn') {
-      // --- โหมดพิเศษ: ตารางเวร RN รวม ---
+      // 1. ดึงข้อมูลพื้นฐาน (พนักงาน + จองเวร) จากทั้ง 2 ตึก [cite: 14, 15]
       const [resP, resM] = await Promise.all([
         callAPI('getAppData', 'POST', { group: 'nurse_p' }),
         callAPI('getAppData', 'POST', { group: 'nurse_m' })
       ]);
       
+      // เก็บข้อมูล AppData รวม เพื่อใช้หาเวรจองใน constructInitialDraft
+      appData.staff = [...resP.staff, ...resM.staff];
+      appData.bookings = [...resP.bookings, ...resM.bookings];
+      activeStaffOrder = appData.staff.map(s => s[0].trim());
+
+      // 2. ดึงตารางที่จัดเสร็จและบันทึกไว้ล่าสุด [cite: 6, 18]
       const [savedP, savedM] = await Promise.all([
         callAPI('loadSchedule', 'POST', { month: m, year: y, group: 'nurse_p' }),
         callAPI('loadSchedule', 'POST', { month: m, year: y, group: 'nurse_m' })
       ]);
 
-      appData.staff = [...resP.staff, ...resM.staff];
-      activeStaffOrder = appData.staff.map(s => s[0].trim());
-      
+      // 3. สร้างร่างตารางที่มี 'เวรจอง' เป็นพื้นฐาน (ถ้าไม่มีจองจะเป็น x) [cite: 15]
       const combinedSched = constructInitialDraft(m, y, activeStaffOrder);
+
+      // 4. นำเวรที่ 'จัดแล้ว' มาทับร่างตาราง [cite: 18, 19]
       [savedP, savedM].forEach(saved => {
-        if (saved && saved.schedule) {
-          saved.schedule.forEach((day, dIdx) => {
-            day.assignments.forEach(assign => {
-              let target = combinedSched[dIdx].assignments.find(a => a.name.trim() === assign.name.trim());
-              if (target) { target.type = assign.type; target.isBooked = assign.isBooked; }
-            });
+        if (saved && saved.schedule && Array.isArray(saved.schedule)) {
+          saved.schedule.forEach((savedDay, dIdx) => {
+            // ป้องกัน Bug: ตรวจสอบว่าวันที่ในตารางรวมมีอยู่จริง
+            if (combinedSched[dIdx] && savedDay.assignments) {
+              savedDay.assignments.forEach(assign => {
+                let target = combinedSched[dIdx].assignments.find(a => a.name.trim() === assign.name.trim());
+                // นำเวรที่จัดแล้วมาใส่ (ถ้าเวรที่จัดเป็น x ระบบจะคงค่าเดิมหรือ x ไว้)
+                if (target && assign.type !== 'x') { 
+                  target.type = assign.type; 
+                  target.isBooked = assign.isBooked; 
+                }
+              });
+            }
           });
         }
       });
       
       currentSchedule = combinedSched;
+      isFinished = false;
+
+      // หัวเรื่องเลียนแบบโหมด NA [cite: 22]
       document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="........">/${yearBE}`;
-      document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value=".........."> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
+      document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value=".........."> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ${commonSuffix} ${monthYearText}`;
       
       const remarkBox = document.getElementById('scheduleRemark');
       if (remarkBox) { remarkBox.value = getDefaultRemark(); syncPrintRemark(remarkBox.value); }
 
     } else {
-      // --- โหมดปกติ ---
+      // --- โหมดปกติ (nurse_p, nurse_m, asst) --- [cite: 6, 18, 22]
       await refresh(false); 
       const savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
       
+      // ... (โค้ดจัดการหัวเรื่องและข้อมูลเดิมของคุณ) ...
       const currentOrder = (savedData && savedData.orderNum) ? savedData.orderNum : "........";
       document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input type="text" id="orderNum" class="editable-header-input" style="width:70px" value="${currentOrder}">/${yearBE}`;
       
-      const currentDate = (savedData && savedData.issuedDate) ? savedData.issuedDate : "..........";
-      let modeText = (currentGroup === 'nurse_p') ? `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร` : (currentGroup === 'nurse_m') ? `สำหรับงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ` : `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และสงฆ์อาพาธ`;
-      document.getElementById('sub-header').innerHTML = `ลงวันที่ <input type="text" id="issuedDate" class="editable-header-input" style="width:100px" value="${currentDate}"> เดือน ${mNames[prevMonthIdx]} พ.ศ. ${prevMonthYearBE}<br>${modeText} ${commonSuffix} ${monthYearText}`;
-
-      const remarkBox = document.getElementById('scheduleRemark');
-      if (remarkBox) {
-        remarkBox.value = (savedData && savedData.remark && savedData.remark.trim() !== "") ? savedData.remark : getDefaultRemark();
-        syncPrintRemark(remarkBox.value);
-      }
-
       if (savedData && savedData.schedule) { 
         activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
         currentSchedule = savedData.schedule; 
@@ -755,6 +767,9 @@ function syncPrintRemark(val) {
     updateWorkDayCount(); 
     renderTable();
     
+  } catch (err) {
+    console.error(err);
+    Swal.fire('Error', 'เกิดข้อผิดพลาดในการรวมข้อมูล: ' + err.message, 'error');
   } finally {
     if(document.getElementById('table-loader')) document.getElementById('table-loader').remove();
   }
@@ -773,18 +788,19 @@ function selectMode(mode) {
   document.getElementById('main-ui').style.display = 'block'; 
   
   const subNav = document.getElementById('combined-sub-nav');
-  const mainNav = document.querySelector('header nav'); // แถบเมนู จองเวร/จัดตาราง/รายชื่อ
+  const mainNav = document.querySelector('header nav'); 
   
   if (mode === 'combined') {
-    // โหมดตารางรวม: แสดงเมนูย่อย และซ่อนเมนูหลักของระบบเดิม
-    subNav.classList.add('sub-nav-active');
+    // โหมดตารางรวม: แสดงเมนูย่อย (.sub-nav) และซ่อนเมนูหลัก (nav)
+    if(subNav) subNav.classList.add('sub-nav-active');
     if(mainNav) mainNav.style.display = 'none';
     switchSubTab('combined_rn'); 
   } else {
     // โหมดปกติ: ซ่อนเมนูย่อย และแสดงเมนูหลัก
-    subNav.classList.remove('sub-nav-active');
+    if(subNav) subNav.classList.remove('sub-nav-active');
     if(mainNav) mainNav.style.display = 'flex';
     
+    // ตั้งค่า Quota และ Label ตามโหมดที่เลือก (NurseP, NurseM, Asst)
     if (mode === 'nurse_p') {
       document.getElementById('role-label').innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)';
       setQuotas(1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
@@ -840,7 +856,7 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
         select = document.getElementById('staffSelect');
   if(!pList || !sList || !select) return;
 
-  // 1. อัปเดต Dropdown เลือกชื่อ (แสดงตำแหน่งด้วย)
+  // 1. Dropdown เลือกชื่อ (ระบุตำแหน่ง) 
   select.innerHTML = '<option value="">-- เลือกชื่อเจ้าหน้าที่ --</option><option value="Admin">🔑 [ADMIN MODE]</option>'; 
   if(appData.staff) {
     appData.staff.forEach(s => {
@@ -848,39 +864,53 @@ function setQuotas(wrn, wrm, wra, wsn, wsm, wsa, hrn, hrm, hra, hsn, hsm, hsa) {
     });
   }
 
-  // 2. แสดงรายชื่อในหน้าจัดการ
+  // 2. หน้าจัดการรายชื่อ 
   if (currentGroup === 'combined_staff') {
+    showProgress('กำลังโหลดรายชื่อทั้งหมด...');
     const [resP, resM, resA] = await Promise.all([
       callAPI('getAppData', 'POST', { group: 'nurse_p' }),
       callAPI('getAppData', 'POST', { group: 'nurse_m' }),
       callAPI('getAppData', 'POST', { group: 'asst' })
     ]);
+    Swal.close();
 
     const allRN = [...resP.staff, ...resM.staff];
     const allNA = resA.staff;
 
-    pList.innerHTML = `<div class="staff-category-header font-black text-indigo-600 mb-4 px-2 flex items-center gap-2"><span class="w-3 h-3 bg-indigo-500 rounded-full"></span> 📋 กลุ่มพยาบาลวิชาชีพ (RN)</div>`;
+    // แสดงกลุ่ม RN
+    pList.innerHTML = `<div class="staff-category-header font-black text-indigo-600 mb-4 px-2 flex items-center gap-2"><span class="w-3 h-3 bg-indigo-500 rounded-full"></span> 📋 พยาบาลวิชาชีพ (RN)</div>`;
     allRN.forEach(s => {
       pList.innerHTML += `<div class="flex justify-between items-center py-2 px-4 hover:bg-slate-50 border-b">
-        <div><p class="font-bold text-slate-800 text-sm">${s[0]}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${s[1]}</p></div>
+        <div><p class="font-bold text-slate-800 text-sm">${s[0]}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${s[1] || 'พยาบาลวิชาชีพ'}</p></div>
         <span class="text-[9px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-black border border-indigo-100">RN</span>
       </div>`;
     });
 
-    sList.innerHTML = `<div class="staff-category-header font-black text-blue-600 mb-4 px-2 flex items-center gap-2"><span class="w-3 h-3 bg-blue-500 rounded-full"></span> 📋 กลุ่มพนักงานช่วยเหลือคนไข้ (NA)</div>`;
+    // แสดงกลุ่ม NA
+    sList.innerHTML = `<div class="staff-category-header font-black text-blue-600 mb-4 px-2 flex items-center gap-2"><span class="w-3 h-3 bg-blue-500 rounded-full"></span> 📋 พนักงานช่วยเหลือคนไข้ (NA)</div>`;
     allNA.forEach(s => {
       sList.innerHTML += `<div class="flex justify-between items-center py-2 px-4 hover:bg-slate-50 border-b">
-        <div><p class="font-bold text-slate-800 text-sm">${s[0]}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${s[1]}</p></div>
+        <div><p class="font-bold text-slate-800 text-sm">${s[0]}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${s[1] || 'พนักงานช่วยเหลือคนไข้'}</p></div>
         <span class="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-black border border-blue-100">NA</span>
       </div>`;
     });
+
   } else {
-    // โหมดปกติ: แสดงรายชื่อกลุ่มที่เลือก พร้อมระบุตำแหน่ง
+    // โหมดปกติ: แสดงรายชื่อพร้อมระบุตำแหน่งด้านล่างชื่อ 
     pList.innerHTML = ""; sList.innerHTML = "";
     if(appData.staff) {
       appData.staff.forEach(s => { 
         const name = s[0].trim(), pos = s[1] || "N/A", type = (s[2] || "หลัก").trim();
-        const html = `<div class="flex justify-between items-center py-2 hover:bg-slate-50 transition-all rounded-xl px-3 group" data-name="${name}" data-pos="${pos}" data-type="${type}"><div class="flex items-center gap-3"><div class="drag-handle text-slate-300 cursor-grab">⋮⋮</div><div><p class="font-bold text-slate-800 text-sm">${name}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${pos}</p></div></div><div class="flex items-center gap-2"><button onclick="toggleStaffType('${name}', '${type}')" class="btn-animate text-[9px] font-black px-2 py-1 rounded border ${type==='เสริม'?'bg-amber-50 text-amber-700':'bg-blue-50 text-blue-700'}">${type}</button><button onclick="delStaff('${name}')" class="text-slate-300 hover:text-rose-500 font-bold text-xs p-1">ลบ</button></div></div>`; 
+        const html = `<div class="flex justify-between items-center py-2 hover:bg-slate-50 transition-all rounded-xl px-3 group" data-name="${name}" data-pos="${pos}" data-type="${type}">
+          <div class="flex items-center gap-3">
+            <div class="drag-handle text-slate-300 cursor-grab">⋮⋮</div>
+            <div><p class="font-bold text-slate-800 text-sm">${name}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${pos}</p></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="toggleStaffType('${name}', '${type}')" class="btn-animate text-[9px] font-black px-2 py-1 rounded border ${type==='เสริม'?'bg-amber-50 text-amber-700':'bg-blue-50 text-blue-700'}">${type}</button>
+            <button onclick="delStaff('${name}')" class="text-slate-300 hover:text-rose-500 font-bold text-xs p-1">ลบ</button>
+          </div>
+        </div>`; 
         if(type === "หลัก") pList.innerHTML += html; else sList.innerHTML += html;
       });
     }
