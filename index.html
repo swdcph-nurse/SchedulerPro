@@ -188,6 +188,19 @@
         border-bottom: 2px solid #e2e8f0; margin-bottom: 1.5rem; justify-content: center; gap: 0.5rem;
     }
     #combined-sub-nav.sub-nav-active { display: flex !important; }
+    /* --- Loading Spinner สำหรับปฏิทิน --- */
+.calendar-loading-overlay { 
+    position: absolute; 
+    inset: 0; 
+    background: rgba(255, 255, 255, 0.7); 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 50; 
+    backdrop-filter: blur(2px); 
+    border-radius: 1.5rem;
+}
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -645,20 +658,51 @@
     }
 
     // --- 5. CALENDAR & BOOKING ---
-    function renderCalendar() {
-      const mIn = document.getElementById('bookMonth'), yIn = document.getElementById('bookYear'), grid = document.getElementById('calendarGrid');
+    async function renderCalendar() {
+      const mIn = document.getElementById('bookMonth'), 
+            yIn = document.getElementById('bookYear'), 
+            grid = document.getElementById('calendarGrid');
+      
       if(!mIn || !yIn || !grid) return;
-      const m = parseInt(mIn.value), y = parseInt(yIn.value); grid.innerHTML = '';
-      const first = new Date(y, m, 1).getDay(), daysCount = new Date(y, m + 1, 0).getDate();
-      dNames.forEach(d => grid.innerHTML += `<div class="day-header text-center text-xs uppercase">${d}</div>`);
-      for(let i=0; i<first; i++) grid.innerHTML += `<div class="bg-slate-50 opacity-40"></div>`;
-      for(let d=1; d<=daysCount; d++) {
-        const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, bks = appData.bookings ? appData.bookings.filter(b => b.date === dStr) : [];
-        let bkHtml = bks.map(b => `<div class="tag-booking ${getCalendarTagColorClass(b.type)}"><span class="truncate">${getCleanName(b.name)}</span><span class="font-black ml-1">${b.type}</span></div>`).join('');
-        grid.innerHTML += `<div class="calendar-day bg-white min-h-[100px] p-2 border-t text-left cursor-pointer" onclick="showDayDetails('${dStr}')"><span class="text-[12px] font-black opacity-30">${d}</span><div class="flex flex-col mt-2">${bkHtml}</div></div>`;
-      }
+    
+      // 1. แสดงตัวโหลด (Loading State)
+      const loader = document.createElement('div');
+      loader.className = 'calendar-loading-overlay';
+      loader.innerHTML = `
+        <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-blue-600 mb-2"></div>
+        <p class="font-bold text-blue-600 text-xs">กำลังจัดเตรียมปฏิทิน...</p>
+      `;
+      grid.style.position = 'relative'; // มั่นใจว่า Grid เป็น relative สำหรับ overlay
+      grid.appendChild(loader);
+    
+      // ใช้ setTimeout เล็กน้อยเพื่อให้เบราว์เซอร์แสดงตัวโหลดก่อนประมวลผลหนักๆ
+      setTimeout(() => {
+        const m = parseInt(mIn.value), y = parseInt(yIn.value); 
+        grid.innerHTML = ''; // ล้างค่าเดิมรวมถึงตัวโหลด
+        
+        const first = new Date(y, m, 1).getDay();
+        const daysCount = new Date(y, m + 1, 0).getDate();
+    
+        // 2. วาดหัววัน (อา - ส)
+        dNames.forEach(d => grid.innerHTML += `<div class="day-header text-center text-xs uppercase">${d}</div>`);
+        
+        // 3. วาดช่องว่างก่อนวันที่ 1
+        for(let i=0; i<first; i++) grid.innerHTML += `<div class="bg-slate-50 opacity-40"></div>`;
+        
+        // 4. วาดวันในปฏิทิน
+        for(let d=1; d<=daysCount; d++) {
+          const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const bks = appData.bookings ? appData.bookings.filter(b => b.date === dStr) : [];
+          let bkHtml = bks.map(b => `<div class="tag-booking ${getCalendarTagColorClass(b.type)}"><span class="truncate">${getCleanName(b.name)}</span><span class="font-black ml-1">${b.type}</span></div>`).join('');
+          
+          grid.innerHTML += `
+            <div class="calendar-day bg-white min-h-[120px] p-2 border-t text-left cursor-pointer transition-all hover:bg-blue-50" onclick="showDayDetails('${dStr}')">
+              <span class="text-[14px] font-black opacity-30">${d}</span>
+              <div class="flex flex-col mt-2">${bkHtml}</div>
+            </div>`;
+        }
+      }, 50); // ดีเลย์ 50ms เพื่อให้ UI อัปเดตตัวโหลดก่อน
     }
-
     // --- 6. STAFF MANAGEMENT ---
     async function updateUI() {
       const pList = document.getElementById('primaryStaffList'), sList = document.getElementById('supportStaffList'), select = document.getElementById('staffSelect');
@@ -755,20 +799,91 @@
     async function handleShiftChange(name, dIdx, el) { let day = currentSchedule[dIdx]; let assign = day.assignments.find(a => a.name.trim() === name.trim()); if(assign) { assign.type = el.value; renderTable(); } }
     async function saveSchedule() { const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value; const remark = document.getElementById('scheduleRemark').value, orderNum = document.getElementById('orderNum') ? document.getElementById('orderNum').value : "", issuedDate = document.getElementById('issuedDate') ? document.getElementById('issuedDate').value : ""; showProgress('กำลังบันทึก...'); await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays, isFinished, staffOrder: activeStaffOrder, remark, orderNum, issuedDate }); Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success'); }
     function handleMonthChange(tab) { if (tab === 'booking') renderCalendar(); else if (tab === 'schedule') handleMonthYearChange(); }
-    async function updateCurrentStaff() { currentStaff = document.getElementById('staffSelect').value; renderCalendar(); }
+    async function updateCurrentStaff() { 
+        currentStaff = document.getElementById('staffSelect').value; 
+        if(currentStaff) {
+            await renderCalendar(); // ตัวโหลดจะทำงานภายในฟังก์ชันนี้
+        }
+    }
     function syncPrintRemark(val) { const display = document.getElementById('printRemarkDisplay'); if(display) display.innerText = val; }
     
     async function showDayDetails(date) { 
       const bks = appData.bookings.filter(b => b.date === date); 
-      let html = `<div class="text-left text-xs">`; 
-      if(bks.length === 0) html += `ไม่มีรายการจอง`;
-      else bks.forEach(b => html += `<div class="mb-1"><b>${b.name}:</b> ${b.type}</div>`); 
+      
+      // สร้างส่วนแสดงผลแบบมีสีสัน
+      let html = `<div class="flex flex-col gap-2 mt-4">`; 
+      
+      if(bks.length === 0) {
+        html += `
+          <div class="py-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border-2 border-dashed">
+            <div class="text-3xl mb-2">📅</div>
+            ไม่มีรายการจองในวันนี้
+          </div>`;
+      } else {
+        bks.forEach(b => {
+          // ใช้ฟังก์ชันสีที่มีอยู่แล้วมาประยุกต์ใช้ใน Pop-up
+          const colorClass = getCalendarTagColorClass(b.type);
+          html += `
+            <div class="flex items-center justify-between p-3 bg-white border rounded-2xl shadow-sm hover:border-blue-300 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">
+                  ${getCleanName(b.name).charAt(0)}
+                </div>
+                <div class="text-left">
+                  <p class="font-bold text-slate-700 text-sm leading-none mb-1">${b.name}</p>
+                  <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">พยาบาลวิชาชีพ / NA</p>
+                </div>
+              </div>
+              <div class="tag-booking ${colorClass} px-3 py-1 rounded-lg text-xs font-black min-w-[40px] flex items-center justify-center">
+                ${b.type}
+              </div>
+            </div>`;
+        });
+      }
       html += `</div>`; 
-      const res = await Swal.fire({ title: `จองเวร: ${date}`, html, showCancelButton: true, confirmButtonText: 'จองเวร/แก้ไข' }); 
+    
+      // ปรับแต่ง SweetAlert2 ให้เข้ากับ Theme ของระบบ
+      const res = await Swal.fire({ 
+        title: `📅 รายละเอียดการจอง\n<span class="text-sm font-bold text-blue-600">${date}</span>`, 
+        html, 
+        showCancelButton: true, 
+        confirmButtonText: '➕ จองเวร / แก้ไข',
+        cancelButtonText: 'ปิดหน้าต่าง',
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#94a3b8',
+        reverseButtons: true,
+        background: '#f8fafc',
+        borderRadius: '2rem',
+        customClass: {
+          title: 'font-black text-slate-800 leading-tight',
+          popup: 'p-6'
+        }
+      }); 
+    
       if(res.isConfirmed) { 
-        if(!currentStaff) return Swal.fire('โปรดเลือกชื่อก่อน','','warning'); 
-        const { value: type } = await Swal.fire({ title: 'ระบุเวร', input: 'select', inputOptions: { 'ด':'ด','ช':'ช','บ':'บ','x':'x','vac':'vac','อบรม':'อบรม' } }); 
-        if(type) { showProgress('กำลังบันทึก...'); await callAPI('saveBooking', 'POST', { data: {date, name: currentStaff, type} }); refresh(); } 
+        if(!currentStaff) return Swal.fire({
+          icon: 'warning',
+          title: 'โปรดเลือกชื่อก่อน',
+          text: 'กรุณาเลือกชื่อเจ้าหน้าที่จากเมนูด้านบนก่อนทำการจอง',
+          borderRadius: '2rem',
+          confirmButtonColor: '#3b82f6'
+        }); 
+    
+        const { value: type } = await Swal.fire({ 
+          title: 'ระบุประเภทเวร', 
+          input: 'select', 
+          inputOptions: { 'ด':'ด (ดึก)','ช':'ช (เช้า)','บ':'บ (บ่าย)','x':'x (Off)','vac':'vac (ลาพักร้อน)','อบรม':'อ (อบรม)' },
+          inputPlaceholder: '-- เลือกเวรที่ต้องการ --',
+          borderRadius: '2rem',
+          confirmButtonColor: '#3b82f6',
+          customClass: { input: 'font-bold text-sm rounded-xl border-2' }
+        }); 
+    
+        if(type) { 
+          showProgress('กำลังบันทึกการจอง...'); 
+          await callAPI('saveBooking', 'POST', { data: {date, name: currentStaff, type} }); 
+          refresh(); 
+        } 
       } 
     }
 
@@ -796,7 +911,7 @@
     function getDefaultRemark() {
       const rnRem = "หมายเหตุ : พยาบาลวิชาชีพ ด = 24.00-08.00  ช = 08.00-16.00  บ = 16.00-24.00 ช* บ* ด* = เวรเสริมปาริฉัตร  ชR บR ดR = เวรรีเฟอร์  อ = อบรม";
       const naRem = "หมายเหตุ : พนักงานช่วยเหลือคนไข้ ด = 24.00-08.00  ช = 08.00-16.00  บ = 16.00-24.00 ช* บ* ด* = เวรเสริม ช5 = ปฏิบัติงานหอสงฆ์อาพาธ";
-      const combRem = "พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรปาริฉัตร ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
+      const combRem = "หมายเหตู : พยาบาลวิชาชีพ ด = 24.00-08.00 น. ช = 08.00-16.00 น. บ = 16.00-24.00 น. ช* บ* ด* = เวรปาริฉัตร ชR บR ดR = เวรรีเฟอร์ อ = อบรม";
       if (currentGroup === 'asst') return naRem;
       if (currentGroup === 'combined_rn') return combRem;
       return rnRem;
