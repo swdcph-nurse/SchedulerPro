@@ -119,55 +119,66 @@
 
   <!-- Landing Page -->
   <div id="mode-overlay">
-    <div class="overlay-left">
-      <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" alt="Logo">
-      <h1>SWD Scheduler <span style="color: #bfdbfe;">Pro</span></h1>
-      <p>ระบบจัดเวรปฏิบัติราชการอัจฉริยะ</p>
-      <div class="hospital-box">
+  <div class="overlay-left">
+    <div class="flex flex-col items-center">
+        <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" alt="SWD Logo">
+        <h1>SWD Scheduler <span class="text-blue-200">Pro</span></h1>
+        <p class="text-sm md:text-lg opacity-80 mt-2 font-medium">ระบบจัดเวรปฏิบัติราชการอัจฉริยะ</p>
+    </div>
+    
+    <div class="mt-8 px-5 py-3 border border-white/20 rounded-2xl bg-white/10 text-center max-w-xs backdrop-blur-md hidden md:block">
+      <p class="text-xs md:text-sm font-light">
         กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม กลุ่มการพยาบาล<br>
         โรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน
-      </div>
+      </p>
     </div>
+  </div>
 
-    <div class="overlay-right">
-      <div class="login-container">
-        <h2>ยินดีต้อนรับ</h2>
-        <p class="subtitle">กรุณาเลือกประเภทผู้ปฏิบัติงานเพื่อเข้าสู่ระบบ</p>
-        
-        <div class="flex flex-col gap-2">
-          <button onclick="selectMode('nurse_p')" class="mode-item-btn">
-            <div class="icon-box">👩‍⚕️</div>
-            <div class="text-box">
-              <div>พยาบาลวิชาชีพ</div>
-              <p>หอผู้ป่วยพิเศษปาริฉัตร</p>
-            </div>
-          </button>
-          <button onclick="selectMode('nurse_m')" class="mode-item-btn">
-            <div class="icon-box">👨‍⚕️</div>
-            <div class="text-box">
-              <div>พยาบาลวิชาชีพ</div>
-              <p>หอสงฆ์อาพาธ</p>
-            </div>
-          </button>
-          <button onclick="selectMode('asst')" class="mode-item-btn">
-            <div class="icon-box">🏥</div>
-            <div class="text-box">
-              <div>พนักงานช่วยเหลือคนไข้</div>
-              <p>พนักงานช่วยเหลือคนไข้ (NA / Asst)</p>
-            </div>
-          </button>
-          <button onclick="selectMode('combined')" class="mode-item-btn" style="border-color: #e9d5ff;">
-            <div class="icon-box" style="background: #fdf4ff;">📊</div>
-            <div class="text-box">
-              <div>ตารางเวรรวม</div>
-              <p>RN + NA รวมพิเศษปาริฉัตร-สงฆ์</p>
-            </div>
-          </button>
-        </div>
-        <p class="text-center text-[10px] text-slate-400 mt-10">© 2026 Develop By NatnarinTh IT nurse</p>
+  <div class="overlay-right">
+    <div class="login-container">
+      <h2>ยินดีต้อนรับ</h2>
+      <p class="subtitle">กรุณาเลือกประเภทผู้ปฏิบัติงาน</p>
+      
+      <div class="space-y-3">
+        <button onclick="selectMode('nurse_p')" class="mode-item-btn shadow-sm">
+          <div class="icon-box">👩‍⚕️</div>
+          <div class="text-box">
+            <div>พยาบาลวิชาชีพ</div>
+            <p>หอผู้ป่วยพิเศษปาริฉัตร</p>
+          </div>
+        </button>
+
+        <button onclick="selectMode('nurse_m')" class="mode-item-btn shadow-sm">
+          <div class="icon-box">👨‍⚕️</div>
+          <div class="text-box">
+            <div>พยาบาลวิชาชีพ</div>
+            <p>หอสงฆ์อาพาธ</p>
+          </div>
+        </button>
+
+        <button onclick="selectMode('asst')" class="mode-item-btn shadow-sm">
+          <div class="icon-box">🏥</div>
+          <div class="text-box">
+            <div>พนักงานช่วยเหลือคนไข้</div>
+            <p>พนักงานช่วยเหลือคนไข้ (NA / Asst)</p>
+          </div>
+        </button>
+
+        <button onclick="selectMode('combined')" class="mode-item-btn" style="border-color: #ddd6fe; background: #f5f3ff;">
+          <div class="icon-box" style="background: white; color: #7c3aed;">📊</div>
+          <div class="text-box">
+            <div style="color: #6d28d9;">ตารางเวรรวม</div>
+            <p>RN + NA รวมพิเศษปาริฉัตร-สงฆ์</p>
+          </div>
+        </button>
+      </div>
+
+      <div class="mt-10 text-center">
+        <p class="text-[10px] text-slate-400 font-medium">© 2026 Develop By NatnarinTh IT nurse</p>
       </div>
     </div>
   </div>
+</div>
 
   <!-- Main System UI -->
   <div id="main-ui" style="display: none;">
