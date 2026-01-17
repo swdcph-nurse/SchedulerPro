@@ -10,165 +10,87 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  
   <style>
-    /* --- 1. พื้นฐานและฟอนต์ (ขยายขนาดพื้นฐาน) --- */
+    /* --- 1. พื้นฐานและฟอนต์ --- */
     body { 
         font-family: 'Sarabun', sans-serif; 
-        background-color: #f8fafc; 
-        font-size: 16px; /* ขยายขนาดพื้นฐาน */
+        background-color: #f1f5f9; 
+        font-size: 16px; 
         color: #1e293b; 
-        overflow-x: hidden; 
-        margin: 0;
     }
 
-    /* --- 2. หน้าเริ่มต้นแบบ Responsive (ปรับปรุงเลย์เอาต์ใหม่) --- */
+    /* --- 2. หน้าเริ่มต้น (Overlay) --- */
     #mode-overlay {
-        position: fixed; 
-        inset: 0; 
-        z-index: 500;
-        display: flex; 
-        flex-direction: column; /* มือถือ: เรียงลงมา */
+        position: fixed; inset: 0; z-index: 500;
+        display: flex; flex-direction: column;
         background: white;
-        overflow-y: auto;
     }
-
-    @media (min-width: 1024px) {
-        #mode-overlay { flex-direction: row; } /* PC: แบ่งซ้ายขวา */
-    }
+    @media (min-width: 1024px) { #mode-overlay { flex-direction: row; } }
 
     .overlay-left {
-        flex: 1;
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        color: white; padding: 4rem 2rem;
+        flex: 1; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: white; padding: 3rem;
     }
 
-    .overlay-left img { 
-        width: clamp(120px, 15vw, 180px); 
-        height: auto; 
-        border-radius: 2.5rem; 
-        background: white; padding: 1rem; 
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); 
+    /* --- 3. ตารางปฏิบัติงาน (Table Styles) --- */
+    .table-container { 
+        overflow: auto; border-radius: 1.5rem; 
+        background: white; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); 
+        border: 1px solid #e2e8f0;
+    }
+    .table-official { width: max-content; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+    .table-official th, .table-official td { 
+        height: 42px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; 
+        text-align: center; vertical-align: middle; 
     }
 
-    .overlay-left h1 { 
-        font-size: clamp(2rem, 5vw, 3.5rem); 
-        font-weight: 900; margin-top: 1.5rem; 
-        letter-spacing: -1.5px; text-align: center;
+    /* สีพื้นหลังสถานะพิเศษ */
+    .bg-holiday { background-color: #fee2e2 !important; color: #991b1b !important; font-weight: 800; } 
+    .cell-booked { background-color: #dbeafe !important; outline: 2px solid #3b82f6; outline-offset: -2px; }
+
+    /* --- 4. การจัดการสีสถิติ (Statistics Colors) --- */
+    .stat-low { background-color: #fff1f2; color: #e11d48 !important; font-weight: 900; }  /* ขาด = แดง */
+    .stat-high { background-color: #fff7ed; color: #f59e0b !important; font-weight: 900; } /* เกิน = ส้ม */
+    .stat-ok { background-color: #f0fdf4; color: #15803d !important; font-weight: 900; }   /* ครบผลัด = เขียว */
+    .stat-blue { background-color: #eff6ff; color: #2563eb !important; font-weight: 900; } /* ครบวัน = น้ำเงิน */
+
+    /* --- 5. สีตัวอักษรของเวรแต่ละประเภท (Shift Text Colors) --- */
+    .text-ด { color: #1e40af !important; font-weight: 800; } /* ดึก = น้ำเงินเข้ม */
+    .text-ช { color: #15803d !important; font-weight: 800; } /* เช้า = เขียวเข้ม */
+    .text-บ { color: #b45309 !important; font-weight: 800; } /* บ่าย = ส้มเข้ม */
+    .text-rose-500 { color: #ef4444 !important; font-weight: 800; } /* Off/Vac = แดง */
+
+    /* --- 6. ปฏิทินจองเวร (Colorful Calendar) --- */
+    .calendar-day { min-height: 140px; padding: 0.75rem; background: white; border: 1px solid #f1f5f9; transition: 0.2s; }
+    .calendar-day:hover { background-color: #f8fafc; transform: scale(1.01); z-index: 10; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    
+    .tag-booking { 
+        font-size: 11px; padding: 4px 8px; margin-bottom: 3px; 
+        border-radius: 6px; color: white; font-weight: 700; 
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    /* สี Gradient สำหรับเวรในปฏิทิน */
+    .type-ด { background: linear-gradient(135deg, #1e40af, #3b82f6); }
+    .type-ช { background: linear-gradient(135deg, #15803d, #22c55e); }
+    .type-บ { background: linear-gradient(135deg, #b45309, #f59e0b); }
+    .type-red { background: linear-gradient(135deg, #be123c, #fb7185); } /* Vac/อื่นๆ */
 
-    .overlay-right {
-        flex: 1.2; 
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        padding: 2rem; background: white;
-    }
-
-    /* ขยายแถบเมนูหน้าแรกให้ใหญ่และกดง่ายขึ้น */
-    .login-container { width: 100%; max-width: 550px; }
-    .login-container h2 { font-size: 2.2rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
-
-    .mode-item-btn {
-        width: 100%; display: flex; align-items: center; gap: 1.5rem;
-        padding: 1.5rem 2rem; margin-bottom: 1.2rem; 
-        border: 2px solid #f1f5f9; border-radius: 1.5rem; 
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        text-align: left; background: white; cursor: pointer;
-    }
-
-    .mode-item-btn:hover { 
-        border-color: #3b82f6; 
-        background-color: #f0f7ff; 
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
-    }
-
-    .mode-item-btn .icon-box { 
-        width: 65px; height: 65px; border-radius: 1.2rem; 
-        display: flex; align-items: center; justify-content: center; 
-        font-size: 2.2rem; background: #f8fafc; flex-shrink: 0;
-    }
-
-    .mode-item-btn .text-box div { font-weight: 800; color: #1e293b; font-size: 1.2rem; }
-    .mode-item-btn .text-box p { font-size: 0.95rem; color: #64748b; font-weight: 600; margin-top: 2px; }
-
-    /* --- 3. แถบเมนูบน (Top Nav) ขยายเพิ่ม --- */
-    header { padding: 1rem 0; }
-    nav button {
-        padding: 0.8rem 1.8rem !important; 
-        font-size: 15px !important; 
-        border-radius: 1rem !important;
+    /* --- 7. แถบเมนูและปุ่ม (UI Elements) --- */
+    .sub-btn { 
+        padding: 0.8rem 1.5rem; border-radius: 1rem; font-weight: 800; 
+        font-size: 13px; color: #64748b; background: white; border: 1px solid #e2e8f0;
         transition: all 0.2s;
     }
-    nav button:hover { transform: translateY(-1px); }
-
-    /* --- 4. ตารางและเนื้อหา (Full Screen) --- */
-    main { max-width: 100% !important; padding: 0 1.5rem !important; }
-    
-    .table-container { 
-        border-radius: 1.5rem; 
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); 
-        max-height: 80vh;
+    .sub-btn-active { 
+        background: #3b82f6; color: white; border-color: #3b82f6;
+        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
     }
 
-    /* ขยายตัวหนังสือในตาราง */
-    .table-official { font-size: 13px; font-weight: 500; }
-    .table-official th { height: 45px; font-size: 14px; }
-    .table-official td { height: 40px; }
-
-    .sticky-col-1 { width: 50px !important; }
-    .sticky-col-2 { width: 220px !important; font-size: 14px !important; font-weight: 700 !important; }
-    .sticky-col-3 { width: 140px !important; }
-
-    /* --- 5. การปรับแต่งสถานะและสี --- */
-    .select-shift { 
-        font-size: 14px !important; 
-        font-weight: 700; 
-        width: 100%; height: 100%;
-    }
-
-    /* ปฏิทินจองเวรขยายขนาด */
-    .calendar-day { min-height: 140px !important; }
-    .calendar-day span { font-size: 16px !important; }
-    .tag-booking { padding: 4px 8px !important; font-size: 11px !important; border-radius: 6px !important; }
-
-    /* --- 6. Mobile Optimization (CSS เฉพาะมือถือ) --- */
-    @media (max-width: 768px) {
-        .overlay-left { padding: 2rem 1rem; }
-        .overlay-left h1 { font-size: 2.2rem; }
-        .login-container h2 { font-size: 1.8rem; text-align: center; }
-        .login-container .subtitle { text-align: center; }
-        
-        /* เมนูบนมือถือให้เลื่อนซ้ายขวาได้ถ้าปุ่มเยอะ */
-        nav { 
-            overflow-x: auto; 
-            white-space: nowrap; 
-            width: 100%; 
-            justify-content: flex-start !important; 
-            padding: 0.5rem !important;
-        }
-        
-        /* ขยายชื่อในตารางบนมือถือไม่ให้เบียด */
-        .sticky-col-2 { width: 160px !important; }
-    }
-
-    /* --- 7. การพิมพ์ (A4 แนวนอน) --- */
-    @media print {
-        @page { size: A4 landscape; margin: 0.5cm; }
-        .table-official { font-size: 9pt !important; }
-        .sticky-col-1, .sticky-col-2, .sticky-col-3 { position: static !important; }
-    }
-
-    /* ตกแต่ง Remark */
-    #scheduleRemark {
-        font-size: 16px;
-        border-radius: 1rem;
-        border: 2px solid #e2e8f0;
-        transition: border-color 0.2s;
-    }
-    #scheduleRemark:focus { border-color: #3b82f6; background-color: white; }
+    /* ส่วนหัวตาราง Fixed Columns */
+    .sticky-col-1 { position: sticky; left: 0; z-index: 40; background: #fff !important; font-weight: 800; color: #94a3b8; }
+    .sticky-col-2 { position: sticky; left: 40px; z-index: 40; background: #fff !important; text-align: left !important; padding-left: 12px !important; border-right: 2px solid #e2e8f0 !important; }
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -227,33 +149,38 @@
 
   <!-- Main System UI -->
   <div id="main-ui" style="display: none;">
-  <header class="modern-nav px-4 py-4 mb-6 bg-white shadow-md border-b no-print"> <div class="max-w-[100%] mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-5">
-        <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" class="w-12 h-12 rounded-xl shadow-sm">
-        <div>
-          <h2 class="font-black text-2xl text-slate-800 leading-none">ระบบจัดเวร <span id="role-label" class="text-blue-600">...</span></h2>
-          <p class="text-purple-500 text-xs font-bold uppercase mt-1 tracking-wider">หน่วยงาน : พิเศษปาริฉัตร-สงฆ์อาพาธ รพร.สว่างแดนดิน</p>
-        </div>
+  <header class="modern-nav px-6 py-4 mb-6 bg-white shadow-lg border-b no-print">
+  <div class="max-w-[100%] mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
+    <div class="flex items-center gap-5">
+      <div class="p-2 bg-blue-50 rounded-2xl">
+        <img src="https://img2.pic.in.th/Gemini_Generated_Image_f6cimzf6cimzf6ci.png" class="w-12 h-12 rounded-xl">
       </div>
-      <nav class="flex flex-wrap justify-center items-center gap-2 bg-slate-100 p-1.5 rounded-2xl">
-        <button onclick="switchTab('booking')" class="px-6 py-3 rounded-xl font-bold text-sm transition-all" id="btn-booking">📅 จองเวร</button>
-        <button onclick="switchTab('schedule')" class="px-6 py-3 rounded-xl font-bold text-sm transition-all" id="btn-schedule">⚙️ จัดตาราง</button>
-        <button onclick="switchTab('settings')" class="px-6 py-3 rounded-xl font-bold text-sm transition-all" id="btn-settings">👥 รายชื่อ</button>
-        <button onclick="location.reload()" class="p-3 text-slate-400 hover:text-rose-500 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-        </button>
-      </nav>
+      <div>
+        <h2 class="font-black text-2xl text-slate-800">ระบบจัดเวร <span id="role-label" class="text-blue-600">...</span></h2>
+        <p class="text-indigo-500 text-xs font-bold uppercase tracking-widest">รพร.สว่างแดนดิน • SMART SCHEDULER PRO</p>
+      </div>
     </div>
-  </header>
+    <nav class="flex items-center gap-2 bg-slate-100 p-2 rounded-2xl shadow-inner">
+      <button onclick="switchTab('booking')" class="px-6 py-3 rounded-xl font-bold text-sm transition-all" id="btn-booking">📅 จองเวร</button>
+      <button onclick="switchTab('schedule')" class="px-6 py-3 rounded-xl font-bold text-sm transition-all" id="btn-schedule">⚙️ จัดตาราง</button>
+      <button onclick="switchTab('settings')" class="px-6 py-3 rounded-xl font-bold text-sm transition-all" id="btn-settings">👥 รายชื่อ</button>
+    </nav>
+  </div>
+</header>
 
-    <div id="combined-sub-nav" class="sub-nav no-print items-center">
-        <button onclick="location.reload()" class="bg-white text-slate-500 p-2 rounded-xl mr-2 border shadow-sm">🏠</button>
-        <button onclick="switchSubTab('combined_rn')" id="sub-combined-rn" class="sub-btn sub-btn-active">1) ตารางเวร RN รวม</button>
-        <button onclick="switchSubTab('combined_na')" id="sub-combined-na" class="sub-btn">2) ตารางเวร NA</button>
-        <button onclick="switchSubTab('combined_staff')" id="sub-combined-staff" class="sub-btn">3) จัดการรายชื่อทั้งหมด</button>
+  <div id="combined-sub-nav" class="sub-nav no-print items-center px-4 mb-6">
+    <button onclick="location.reload()" class="bg-white text-slate-500 p-3 rounded-2xl mr-3 border shadow-sm hover:bg-slate-50">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+      </svg>
+    </button>
+    <div class="flex flex-1 gap-2 bg-white p-1.5 rounded-2xl border shadow-sm overflow-x-auto">
+      <button onclick="switchSubTab('combined_rn')" id="sub-combined-rn" class="sub-btn sub-btn-active flex-1 min-w-max">1) ตารางเวร RN รวม</button>
+      <button onclick="switchSubTab('combined_na')" id="sub-combined-na" class="sub-btn flex-1 min-w-max">2) ตารางเวร NA</button>
+      <button onclick="switchSubTab('combined_staff')" id="sub-combined-staff" class="sub-btn flex-1 min-w-max">3) จัดการรายชื่อทั้งหมด</button>
     </div>
+  </div>
+</div>
 
     <main class="max-w-[98%] mx-auto px-2 pb-12">
       <!-- Tab 1: Booking -->
@@ -367,7 +294,15 @@
     const dNames = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
     function showProgress(msg = 'กำลังดำเนินการ...') { Swal.fire({ title: msg, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }, showConfirmButton: false, backdrop: 'rgba(15, 23, 42, 0.4)' }); }
-    function getShiftColorClass(type) { if(!type) return 'text-normal'; const t = type.toString().toLowerCase().trim(); return (t === 'x' || t === 'vac') ? 'text-rose-500' : 'text-slate-700'; }
+    function getShiftColorClass(type) { 
+        if(!type) return ''; 
+        const t = type.toString().trim(); 
+        if(t.includes('ด')) return 'text-ด'; 
+        if(t.includes('ช')) return 'text-ช'; 
+        if(t.includes('บ')) return 'text-บ'; 
+        if(t === 'x' || t === 'vac' || t.includes('R')) return 'text-rose-500'; 
+        return 'text-slate-700'; 
+    }
     function getCalendarTagColorClass(type) { if(!type) return 'type-red'; const t = type.toString().trim(); if(t.includes('ด')) return 'type-ด'; if(t.includes('ช')) return 'type-ช'; if(t.includes('บ')) return 'type-บ'; return 'type-red'; }
     function getCleanName(fullName) { if(!fullName) return ""; return fullName.replace(/^(นาย|นางสาว|นาง|พยาบาล)\s?/, "").split(" ")[0]; }
 
