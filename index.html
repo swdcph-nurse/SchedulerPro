@@ -15,14 +15,89 @@
     body { 
         font-family: 'Sarabun', sans-serif; 
         background-color: #f1f5f9; 
-        font-size: 16px; /* ขยายพื้นฐานให้อ่านง่ายขึ้น */
+        font-size: 16px; 
         color: #1e293b; 
         overflow-x: hidden; 
         margin: 0;
     }
 
     /* --- 2. หน้าเริ่มต้น Split Layout (Landing Page) --- */
-    
+    /* แก้ไขปัญหาโลโก้ล้นและจัดตำแหน่งใหม่ให้สมดุล */
+    #mode-overlay {
+        position: fixed; inset: 0; z-index: 500;
+        display: flex; flex-direction: column; /* มือถือ: เรียงแนวดิ่ง */
+        background: white; overflow-y: auto;
+    }
+
+    /* PC: แบ่งซ้าย-ขวา 50/50 */
+    @media (min-width: 1024px) {
+        #mode-overlay { flex-direction: row; overflow: hidden; }
+    }
+
+    .overlay-left {
+        flex: 1; min-height: 45vh;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        color: white; padding: 2rem;
+    }
+
+    /* จำกัดขนาดโลโก้ไม่ให้ใหญ่เกินไปในทุกหน้าจอ */
+    .overlay-left img { 
+        width: clamp(100px, 22vw, 200px); 
+        height: auto; 
+        border-radius: 2.5rem; 
+        background: white; padding: 1rem; 
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); 
+    }
+
+    .overlay-left h1 { 
+        font-size: clamp(1.8rem, 4vw, 3.2rem); 
+        font-weight: 900; margin-top: 1.5rem; 
+        letter-spacing: -1.5px; text-align: center;
+        line-height: 1.1;
+    }
+
+    .overlay-left p { font-size: clamp(0.9rem, 1.5vw, 1.2rem); opacity: 0.9; margin-top: 0.5rem; text-align: center; }
+
+    .overlay-left .hospital-box { 
+        margin-top: 2rem; padding: 1rem 1.5rem; 
+        border: 1px solid rgba(255,255,255,0.3); border-radius: 1.5rem; 
+        background: rgba(255,255,255,0.1); text-align: center; 
+        max-width: 85%; font-size: 0.85rem; backdrop-filter: blur(4px);
+    }
+
+    .overlay-right {
+        flex: 1.2; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 2.5rem 1.5rem; background: white;
+    }
+
+    .login-container { width: 100%; max-width: 480px; }
+    .login-container h2 { font-size: 2rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; text-align: center; }
+    .login-container .subtitle { color: #64748b; font-weight: 600; margin-bottom: 2rem; text-align: center; font-size: 1rem; }
+
+    /* ปุ่มเลือกโหมดหน้าแรก - ขยายให้ใหญ่และกดง่ายขึ้น */
+    .mode-item-btn {
+        width: 100%; display: flex; align-items: center; gap: 1.2rem;
+        padding: 1.25rem 1.5rem; margin-bottom: 1rem; 
+        border: 2px solid #f1f5f9; border-radius: 1.5rem; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: left; background: white; cursor: pointer;
+    }
+
+    .mode-item-btn:hover { 
+        border-color: #3b82f6; background-color: #f0f7ff; 
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+    }
+
+    .mode-item-btn .icon-box { 
+        width: 55px; height: 55px; border-radius: 1.2rem; font-size: 1.8rem;
+        display: flex; align-items: center; justify-content: center; background: #f8fafc; flex-shrink: 0;
+    }
+
+    .mode-item-btn .text-box div { font-weight: 800; color: #1e293b; font-size: 1.15rem; }
+    .mode-item-btn .text-box p { font-size: 0.9rem; color: #64748b; font-weight: 600; margin-top: 1px; }
 
     /* --- 3. แถบเมนูบน (Top Navigation) --- */
     header { padding: 1rem 0; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
@@ -37,7 +112,7 @@
     .sub-btn-active { background: #3b82f6; color: white; border-color: #3b82f6; }
 
     /* --- 4. ตารางเวรและสถิติ (Colorful Table) --- */
-    main { max-width: 100% !important; padding: 0 1.5rem !important; }
+    main { max-width: 100% !important; padding: 0 1rem !important; }
     .table-container { 
         overflow: auto; border-radius: 1.5rem; background: white; 
         box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;
@@ -45,14 +120,14 @@
     .table-official { width: max-content; border-collapse: separate; border-spacing: 0; font-size: 13px; }
     .table-official th, .table-official td { 
         height: 42px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; 
-        text-align: center; vertical-align: middle; 
+        text-align: center; vertical-align: middle; padding: 0 4px;
     }
 
     /* Fixed Columns */
-    .sticky-col-1 { position: sticky; left: 0; z-index: 60; background: white !important; width: 50px !important; }
+    .sticky-col-1 { position: sticky; left: 0; z-index: 60; background: white !important; width: 45px !important; }
     .sticky-col-2 { 
-        position: sticky; left: 50px; z-index: 60; background: white !important; 
-        width: 220px !important; text-align: left !important; padding-left: 12px !important; 
+        position: sticky; left: 45px; z-index: 60; background: white !important; 
+        width: 200px !important; text-align: left !important; padding-left: 12px !important; 
         font-weight: 700; border-right: 2px solid #e2e8f0 !important; 
     }
 
@@ -72,10 +147,10 @@
     .text-rose-500 { color: #ef4444 !important; font-weight: 800; }
 
     /* --- 5. ปฏิทินจองเวร (Modern Calendar) --- */
-    .calendar-day { min-height: 140px; padding: 0.8rem; background: white; border: 1px solid #f1f5f9; transition: 0.2s; }
+    .calendar-day { min-height: 120px; padding: 0.6rem; background: white; border: 1px solid #f1f5f9; transition: 0.2s; }
     .calendar-day:hover { transform: scale(1.01); z-index: 10; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
     .tag-booking { 
-        font-size: 11px; padding: 5px 10px; margin-bottom: 3px; border-radius: 8px; 
+        font-size: 11px; padding: 4px 8px; margin-bottom: 3px; border-radius: 6px; 
         color: white; font-weight: 700; display: flex; justify-content: space-between;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
@@ -86,8 +161,8 @@
 
     /* --- 6. ช่องหมายเหตุและอื่นๆ --- */
     #scheduleRemark { 
-        width: 100%; min-height: 120px; padding: 1.5rem; border: 2px solid #e2e8f0; 
-        border-radius: 1.5rem; font-size: 16px; transition: border-color 0.2s;
+        width: 100%; min-height: 110px; padding: 1.25rem; border: 2px solid #e2e8f0; 
+        border-radius: 1.5rem; font-size: 15px; transition: border-color 0.2s; background: #fffcf9;
     }
     #scheduleRemark:focus { border-color: #3b82f6; outline: none; background: white; }
 
@@ -95,22 +170,22 @@
     @media print {
         @page { size: A4 landscape; margin: 0.5cm; }
         body { background: white !important; }
-        .no-print, header, nav, button { display: none !important; }
-        .table-container { overflow: visible !important; border: none !important; }
-        .table-official { width: 100% !important; font-size: 9pt !important; border: 0.5pt solid black !important; }
+        .no-print, header, nav, button, .sub-nav { display: none !important; }
+        .table-container { overflow: visible !important; border: none !important; box-shadow: none !important; }
+        .table-official { width: 100% !important; font-size: 8.5pt !important; border: 0.5pt solid black !important; }
         .table-official th, .table-official td { border: 0.5pt solid black !important; background: white !important; }
+        .sticky-col-1, .sticky-col-2 { position: static !important; }
     }
 
+    /* ระบบแยกหน้า (Tabs) */
     .tab-content { display: none !important; }
     .tab-active { display: block !important; animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ปรับแต่ง Sub-nav สำหรับโหมดตารางรวมให้ดูเป็นระเบียบแยกจาก Header */
+    /* Sub-nav */
     #combined-sub-nav { 
-        display: none; 
-        background: #f8fafc; 
-        padding: 1rem; 
-        border-bottom: 2px solid #e2e8f0; 
-        margin-bottom: 1.5rem;
+        display: none; background: #f8fafc; padding: 0.75rem 1rem; 
+        border-bottom: 2px solid #e2e8f0; margin-bottom: 1.5rem; justify-content: center; gap: 0.5rem;
     }
     #combined-sub-nav.sub-nav-active { display: flex !important; }
 </style>
