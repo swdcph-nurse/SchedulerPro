@@ -452,44 +452,41 @@
     function getCleanName(fullName) { if(!fullName) return ""; return fullName.replace(/^(นาย|นางสาว|นาง|พยาบาล)\s?/, "").split(" ")[0]; }
 
     // --- 2. NAVIGATION ---
-    function selectMode(mode) { 
-      currentGroup = mode; 
-      
-      // 1. ซ่อนหน้าเลือกโหมด และแสดง UI หลัก
-      document.getElementById('mode-overlay').style.display = 'none'; 
-      document.getElementById('main-ui').style.display = 'block'; 
+    async function selectMode(mode) { 
+  currentGroup = mode; 
+  
+  // 1. ซ่อนหน้าเลือกโหมด และแสดง UI หลัก
+  document.getElementById('mode-overlay').style.display = 'none'; 
+  document.getElementById('main-ui').style.display = 'block'; 
 
-      const subNav = document.getElementById('combined-sub-nav');
-      const mainNav = document.querySelector('header nav'); 
-      const label = document.getElementById('role-label');
+  const subNav = document.getElementById('combined-sub-nav');
+  const mainNav = document.querySelector('header nav'); 
+  const label = document.getElementById('role-label');
 
-      if (mode === 'combined') {
-        // กรณี "ตารางเวรรวม" -> ใช้เมนูย่อยแยกต่างหาก
-        subNav.classList.add('sub-nav-active');
-        if(mainNav) mainNav.style.display = 'none'; 
-        switchSubTab('combined_rn'); // เริ่มต้นที่หน้าตาราง RN รวม
-      } else {
-        // กรณี "โหมดปกติ" -> ใช้เมนูหลัก (จองเวร, จัดตาราง, รายชื่อ)
-        subNav.classList.remove('sub-nav-active');
-        if(mainNav) mainNav.style.display = 'flex';
-        
-        // ตั้งค่าเฉพาะแต่ละโหมด
-        if (mode === 'nurse_p') { 
-            label.innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)'; 
-            setQuotas(1,2,1, 1,0,1, 1,1,1, 1,1,1); 
-        } else if (mode === 'nurse_m') { 
-            label.innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)'; 
-            setQuotas(1,1,1, 0,0,0, 1,1,1, 0,0,0); 
-        } else if (mode === 'asst') { 
-            label.innerText = 'พนักงานช่วยเหลือคนไข้'; 
-            setQuotas(1,3,1, 1,0,1, 1,1,1, 1,1,1); 
-        }
-        
-        populateSelectors(); 
-        // สั่งกระโดดไปที่หน้า "จองเวร" เป็นหน้าแรกเพื่อให้ดูแยกเป็นสัดส่วน
-        switchTab('booking'); 
-      }
+  if (mode === 'combined') {
+    subNav.classList.add('sub-nav-active');
+    if(mainNav) mainNav.style.display = 'none'; 
+    switchSubTab('combined_rn');
+  } else {
+    subNav.classList.remove('sub-nav-active');
+    if(mainNav) mainNav.style.display = 'flex';
+    
+    if (mode === 'nurse_p') { 
+        label.innerText = 'พยาบาลวิชาชีพ (พิเศษปาริฉัตร)'; 
+        setQuotas(1,2,1, 1,0,1, 1,1,1, 1,1,1); 
+    } else if (mode === 'nurse_m') { 
+        label.innerText = 'พยาบาลวิชาชีพ (สงฆ์อาพาธ)'; 
+        setQuotas(1,1,1, 0,0,0, 1,1,1, 0,0,0); 
+    } else if (mode === 'asst') { 
+        label.innerText = 'พนักงานช่วยเหลือคนไข้'; 
+        setQuotas(1,3,1, 1,0,1, 1,1,1, 1,1,1); 
     }
+    
+    populateSelectors(); 
+    switchTab('booking'); // เปลี่ยนหน้าจอก่อน
+    await refresh(true);  // สั่งโหลดข้อมูลทันทีหลังจากเปลี่ยนหน้า (จะไปเรียก renderCalendar เอง)
+  }
+}
 
     function switchTab(id) { 
       // 1. ซ่อนทุก Tab ก่อน
@@ -814,7 +811,22 @@
 
     // --- 7. SYSTEM & UTILS ---
     async function callAPI(action, method = 'POST', data = {}) { try { let options = { method: 'POST', body: JSON.stringify({ action, group: currentGroup, ...data }) }; const response = await fetch(WEB_APP_URL, options); return await response.json(); } catch (err) { return null; } }
-    async function refresh(loader = true) { if(loader) showProgress(); const data = await callAPI('getAppData', 'GET'); if (data) { appData = data; updateUI(); renderCalendar(); } if(loader) Swal.close(); }
+    async function refresh(loader = true) { 
+    if(loader) showProgress('กำลังเชื่อมต่อฐานข้อมูล...'); 
+    
+    // แสดงตัวโหลดที่ปฏิทินรอไว้
+    toggleCalendarLoading(true);
+
+    const data = await callAPI('getAppData', 'POST'); // เปลี่ยนเป็น POST เพื่อความแน่นอน
+    if (data) { 
+        appData = data; 
+        updateUI(); 
+        renderCalendar(); 
+    } 
+    
+    toggleCalendarLoading(false); // ปิดตัวโหลดที่ปฏิทิน
+    if(loader) Swal.close(); 
+}
     function populateSelectors() { const now = new Date(); let nextM = now.getMonth() + 1, targetY = now.getFullYear(); if (nextM > 11) { nextM = 0; targetY++; } document.querySelectorAll('.year-selector').forEach(sel => { sel.innerHTML = `<option value="${now.getFullYear()}">${now.getFullYear() + 543}</option><option value="${now.getFullYear() + 1}">${now.getFullYear() + 544}</option>`; sel.value = targetY; }); ['bookMonth', 'runMonth'].forEach(id => { const el = document.getElementById(id); if(!el) return; el.innerHTML = ""; mNames.forEach((name, i) => el.innerHTML += `<option value="${i}">${name}</option>`); el.value = nextM; }); }
     function updateWorkDayCount() { const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value), daysCount = new Date(y, m + 1, 0).getDate(); let count = 0; for (let d = 1; d <= daysCount; d++) { const day = new Date(y, m, d).getDay(); if (day !== 0 && day !== 6 && !extraH.includes(d.toString().padStart(2, '0'))) count++; } currentWorkDays = count; if(document.getElementById('workDayDisplay')) document.getElementById('workDayDisplay').innerText = `📅 วันปฏิบัติงาน: ${currentWorkDays} วัน`; }
     function buildHolidayChecks() { const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), container = document.getElementById('holidayCheck'); if(!container) return; container.innerHTML = ""; const daysCount = new Date(y, m+1, 0).getDate(); for(let d=1; d<=daysCount; d++) { container.innerHTML += `<label class="px-1.5 border rounded bg-white cursor-pointer hover:bg-blue-50 text-[10px]"><input type="checkbox" onchange="updateWorkDayCount(); renderTable();" value="${d.toString().padStart(2,'0')}" class="extra-h mr-0.5">${d}</label>`; } }
@@ -951,16 +963,14 @@
     function toggleCalendarLoading(show) {
     const grid = document.getElementById('calendarGrid');
     if (!grid) return;
-
     if (show) {
-        // สร้าง Element ตัวโหลดถ้ายังไม่มี
         if (!document.getElementById('cal-loader')) {
             const loader = document.createElement('div');
             loader.id = 'cal-loader';
-            loader.className = 'calendar-loader-container';
+            loader.className = 'calendar-loading-overlay';
             loader.innerHTML = `
-                <div class="spinner-ring"></div>
-                <p class="mt-3 font-bold text-blue-600 animate-pulse">กำลังโหลดข้อมูลการจอง...</p>
+                <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+                <p class="font-bold text-blue-600">กำลังโหลดข้อมูลการจอง...</p>
             `;
             grid.style.position = 'relative';
             grid.appendChild(loader);
