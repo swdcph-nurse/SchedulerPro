@@ -201,6 +201,36 @@
     backdrop-filter: blur(2px); 
     border-radius: 1.5rem;
 }
+    /* ตัวโหลดสำหรับปฏิทิน */
+.calendar-loader-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(2px);
+    border-radius: 1.5rem;
+}
+
+.spinner-ring {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -659,50 +689,45 @@
 
     // --- 5. CALENDAR & BOOKING ---
     async function renderCalendar() {
-      const mIn = document.getElementById('bookMonth'), 
-            yIn = document.getElementById('bookYear'), 
-            grid = document.getElementById('calendarGrid');
-      
-      if(!mIn || !yIn || !grid) return;
+    const mIn = document.getElementById('bookMonth'), 
+          yIn = document.getElementById('bookYear'), 
+          grid = document.getElementById('calendarGrid');
     
-      // 1. แสดงตัวโหลด (Loading State)
-      const loader = document.createElement('div');
-      loader.className = 'calendar-loading-overlay';
-      loader.innerHTML = `
-        <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-blue-600 mb-2"></div>
-        <p class="font-bold text-blue-600 text-xs">กำลังจัดเตรียมปฏิทิน...</p>
-      `;
-      grid.style.position = 'relative'; // มั่นใจว่า Grid เป็น relative สำหรับ overlay
-      grid.appendChild(loader);
+    if(!mIn || !yIn || !grid) return;
+
+    const m = parseInt(mIn.value), y = parseInt(yIn.value); 
+    const first = new Date(y, m, 1).getDay();
+    const daysCount = new Date(y, m + 1, 0).getDate();
+
+    // ล้างเฉพาะเนื้อหาปฏิทินเดิม (แต่เก็บตัวโหลดไว้ถ้ามี)
+    const existingLoader = document.getElementById('cal-loader');
+    grid.innerHTML = '';
+    if (existingLoader) grid.appendChild(existingLoader);
+
+    // วาดหัววัน
+    dNames.forEach(d => grid.innerHTML += `<div class="day-header text-center text-xs font-black p-2 bg-slate-100 text-slate-500 uppercase">${d}</div>`);
     
-      // ใช้ setTimeout เล็กน้อยเพื่อให้เบราว์เซอร์แสดงตัวโหลดก่อนประมวลผลหนักๆ
-      setTimeout(() => {
-        const m = parseInt(mIn.value), y = parseInt(yIn.value); 
-        grid.innerHTML = ''; // ล้างค่าเดิมรวมถึงตัวโหลด
-        
-        const first = new Date(y, m, 1).getDay();
-        const daysCount = new Date(y, m + 1, 0).getDate();
+    // วาดช่องว่าง
+    for(let i=0; i<first; i++) grid.innerHTML += `<div class="bg-slate-50/50"></div>`;
     
-        // 2. วาดหัววัน (อา - ส)
-        dNames.forEach(d => grid.innerHTML += `<div class="day-header text-center text-xs uppercase">${d}</div>`);
+    // วาดวันในเดือน
+    for(let d=1; d<=daysCount; d++) {
+        const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const bks = appData.bookings ? appData.bookings.filter(b => b.date === dStr) : [];
+        let bkHtml = bks.map(b => `
+            <div class="tag-booking ${getCalendarTagColorClass(b.type)}">
+                <span class="truncate">${getCleanName(b.name)}</span>
+                <span class="font-black ml-1">${b.type}</span>
+            </div>
+        `).join('');
         
-        // 3. วาดช่องว่างก่อนวันที่ 1
-        for(let i=0; i<first; i++) grid.innerHTML += `<div class="bg-slate-50 opacity-40"></div>`;
-        
-        // 4. วาดวันในปฏิทิน
-        for(let d=1; d<=daysCount; d++) {
-          const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-          const bks = appData.bookings ? appData.bookings.filter(b => b.date === dStr) : [];
-          let bkHtml = bks.map(b => `<div class="tag-booking ${getCalendarTagColorClass(b.type)}"><span class="truncate">${getCleanName(b.name)}</span><span class="font-black ml-1">${b.type}</span></div>`).join('');
-          
-          grid.innerHTML += `
-            <div class="calendar-day bg-white min-h-[120px] p-2 border-t text-left cursor-pointer transition-all hover:bg-blue-50" onclick="showDayDetails('${dStr}')">
-              <span class="text-[14px] font-black opacity-30">${d}</span>
-              <div class="flex flex-col mt-2">${bkHtml}</div>
+        grid.innerHTML += `
+            <div class="calendar-day bg-white min-h-[120px] p-2 border-t border-r border-slate-100 cursor-pointer hover:bg-blue-50/50 transition-colors" onclick="showDayDetails('${dStr}')">
+                <span class="text-[14px] font-black opacity-30">${d}</span>
+                <div class="flex flex-col mt-1 gap-1">${bkHtml}</div>
             </div>`;
-        }
-      }, 50); // ดีเลย์ 50ms เพื่อให้ UI อัปเดตตัวโหลดก่อน
     }
+}
     // --- 6. STAFF MANAGEMENT ---
     async function updateUI() {
       const pList = document.getElementById('primaryStaffList'), sList = document.getElementById('supportStaffList'), select = document.getElementById('staffSelect');
@@ -800,11 +825,18 @@
     async function saveSchedule() { const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value; const remark = document.getElementById('scheduleRemark').value, orderNum = document.getElementById('orderNum') ? document.getElementById('orderNum').value : "", issuedDate = document.getElementById('issuedDate') ? document.getElementById('issuedDate').value : ""; showProgress('กำลังบันทึก...'); await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays, isFinished, staffOrder: activeStaffOrder, remark, orderNum, issuedDate }); Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success'); }
     function handleMonthChange(tab) { if (tab === 'booking') renderCalendar(); else if (tab === 'schedule') handleMonthYearChange(); }
     async function updateCurrentStaff() { 
-        currentStaff = document.getElementById('staffSelect').value; 
-        if(currentStaff) {
-            await renderCalendar(); // ตัวโหลดจะทำงานภายในฟังก์ชันนี้
-        }
+    currentStaff = document.getElementById('staffSelect').value; 
+    if(currentStaff) {
+        toggleCalendarLoading(true); // แสดงตัวโหลด
+        // หน่วงเวลาเล็กน้อยเพื่อให้ UI อัปเดตตัวโหลดก่อนเริ่มวาดปฏิทิน
+        setTimeout(async () => {
+            await renderCalendar();
+            toggleCalendarLoading(false); // ซ่อนตัวโหลดเมื่อเสร็จ
+        }, 300);
+    } else {
+        renderCalendar(); // ถ้าไม่ได้เลือกชื่อก็วาดปกติ (ว่างเปล่า)
     }
+}
     function syncPrintRemark(val) { const display = document.getElementById('printRemarkDisplay'); if(display) display.innerText = val; }
     
     async function showDayDetails(date) { 
@@ -916,6 +948,28 @@
       if (currentGroup === 'combined_rn') return combRem;
       return rnRem;
     }
+    function toggleCalendarLoading(show) {
+    const grid = document.getElementById('calendarGrid');
+    if (!grid) return;
+
+    if (show) {
+        // สร้าง Element ตัวโหลดถ้ายังไม่มี
+        if (!document.getElementById('cal-loader')) {
+            const loader = document.createElement('div');
+            loader.id = 'cal-loader';
+            loader.className = 'calendar-loader-container';
+            loader.innerHTML = `
+                <div class="spinner-ring"></div>
+                <p class="mt-3 font-bold text-blue-600 animate-pulse">กำลังโหลดข้อมูลการจอง...</p>
+            `;
+            grid.style.position = 'relative';
+            grid.appendChild(loader);
+        }
+    } else {
+        const loader = document.getElementById('cal-loader');
+        if (loader) loader.remove();
+    }
+}
 
     window.onload = function() { populateSelectors(); };
   </script>
