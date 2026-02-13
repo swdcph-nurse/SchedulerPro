@@ -441,6 +441,7 @@
   <script>
     // --- 1. GLOBAL STATE ---
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyZgCWhHspAeFDKTHDQprJYXPy4nXzIGKplSg_rLNBcWRKr_7GfEK_dVZ6laXU8mco8Eg/exec";
+    let isAdmin = false;
     let currentGroup = "", appData = { staff: [], bookings: [] }, currentSchedule = [], currentWorkDays = 0, currentTargets = [], currentStaff = "", isFinished = false, activeStaffOrder = [];
     let sortableTable; 
     const mNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -837,110 +838,122 @@
     async function saveSchedule() { const m = document.getElementById('runMonth').value, y = document.getElementById('runYear').value; const remark = document.getElementById('scheduleRemark').value, orderNum = document.getElementById('orderNum') ? document.getElementById('orderNum').value : "", issuedDate = document.getElementById('issuedDate') ? document.getElementById('issuedDate').value : ""; showProgress('กำลังบันทึก...'); await callAPI('saveSchedule', 'POST', { month: m, year: y, schedule: currentSchedule, targets: currentTargets, workDays: currentWorkDays, isFinished, staffOrder: activeStaffOrder, remark, orderNum, issuedDate }); Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success'); }
     function handleMonthChange(tab) { if (tab === 'booking') renderCalendar(); else if (tab === 'schedule') handleMonthYearChange(); }
     async function updateCurrentStaff() { 
-    currentStaff = document.getElementById('staffSelect').value; 
+    const select = document.getElementById('staffSelect');
+    const val = select.value;
+    
+    if (val === 'Admin') {
+        const { value: pin } = await Swal.fire({
+            title: 'กรุณาใส่รหัสผ่าน Admin',
+            input: 'password',
+            inputPlaceholder: 'Enter 4-digit PIN',
+            inputAttributes: { maxlength: 4, autocapitalize: 'off', autocorrect: 'off' },
+            showCancelButton: true,
+            confirmButtonColor: '#3b82f6'
+        });
+        
+        if (pin === '4028') {
+            isAdmin = true;
+            currentStaff = 'Admin';
+            Swal.fire({ icon: 'success', title: 'โหมดผู้ดูแลระบบเปิดใช้งานแล้ว', timer: 1000, showConfirmButton: false });
+        } else {
+            isAdmin = false;
+            select.value = ""; // รีเซ็ตค่ากลับไปว่าง
+            currentStaff = "";
+            if (pin) Swal.fire('รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง', 'error');
+            return;
+        }
+    } else {
+        isAdmin = false;
+        currentStaff = val;
+    }
+
     if(currentStaff) {
-        toggleCalendarLoading(true); // แสดงตัวโหลด
-        // หน่วงเวลาเล็กน้อยเพื่อให้ UI อัปเดตตัวโหลดก่อนเริ่มวาดปฏิทิน
+        toggleCalendarLoading(true);
         setTimeout(async () => {
             await renderCalendar();
-            toggleCalendarLoading(false); // ซ่อนตัวโหลดเมื่อเสร็จ
+            toggleCalendarLoading(false);
         }, 300);
-    } else {
-        renderCalendar(); // ถ้าไม่ได้เลือกชื่อก็วาดปกติ (ว่างเปล่า)
     }
 }
     function syncPrintRemark(val) { const display = document.getElementById('printRemarkDisplay'); if(display) display.innerText = val; }
     
-    async function showDayDetails(date) { 
+async function showDayDetails(date) { 
   const bks = appData.bookings.filter(b => b.date === date); 
-  
   let html = `<div class="flex flex-col gap-2 mt-4">`; 
   
   if(bks.length === 0) {
-    html += `
-      <div class="py-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border-2 border-dashed">
-        <div class="text-3xl mb-2">📅</div>
-        ไม่มีรายการจองในวันนี้
-      </div>`;
+    html += `<div class="py-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border-2 border-dashed">ไม่มีรายการจอง</div>`;
   } else {
     bks.forEach(b => {
       const staffInfo = appData.staff.find(s => s[0].trim() === b.name.trim());
       const position = staffInfo ? staffInfo[1] : "ไม่ระบุตำแหน่ง"; 
       const colorClass = getCalendarTagColorClass(b.type);
       
-      // ตรวจสอบว่าเป็นเวรของตัวเองหรือไม่ (อ้างอิงจากชื่อที่เลือกใน Select ด้านบน)
-      const isOwner = (currentStaff && b.name.trim() === currentStaff.trim());
+      // สิทธิ์จัดการ: เป็นเจ้าของเอง OR เป็น Admin
+      const hasPermission = isAdmin || (currentStaff && b.name.trim() === currentStaff.trim());
 
       html += `
-        <div class="flex items-center justify-between p-3 bg-white border rounded-2xl shadow-sm hover:border-blue-300 transition-colors">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">
-              ${getCleanName(b.name).charAt(0)}
-            </div>
-            <div class="text-left">
+        <div class="flex items-center justify-between p-3 bg-white border rounded-2xl shadow-sm hover:border-blue-300">
+          <div class="flex items-center gap-3 text-left">
+            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${getCleanName(b.name).charAt(0)}</div>
+            <div>
               <p class="font-bold text-slate-700 text-sm leading-none mb-1">${b.name}</p>
-              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${position}</p>
+              <p class="text-[10px] text-slate-400 font-bold">${position}</p>
             </div>
           </div>
-          
           <div class="flex items-center gap-2">
-            <div class="tag-booking ${colorClass} px-3 py-1 rounded-lg text-xs font-black min-w-[40px] flex items-center justify-center">
-              ${b.type}
-            </div>
-            
-            ${isOwner ? `
+            <div class="tag-booking ${colorClass} px-3 py-1 rounded-lg text-xs font-black min-w-[40px] flex items-center justify-center">${b.type}</div>
+            ${hasPermission ? `
               <div class="flex gap-1 no-print">
-                <button onclick="editMyBooking('${date}', '${b.name}', '${b.type}')" class="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors" title="แก้ไข">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-                <button onclick="deleteMyBooking('${date}', '${b.name}')" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors" title="ลบ">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            ` : ''}
+                <button onclick="editMyBooking('${date}', '${b.name}', '${b.type}')" class="p-1.5 bg-amber-50 text-amber-600 rounded-lg"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                <button onclick="deleteMyBooking('${date}', '${b.name}')" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+              </div>` : ''}
           </div>
         </div>`;
     });
   }
   html += `</div>`; 
 
-  await Swal.fire({ 
+  const res = await Swal.fire({ 
     title: `📅 รายละเอียดการจอง\n<span class="text-sm font-bold text-blue-600">${date}</span>`, 
-    html, 
-    showCancelButton: true, 
-    confirmButtonText: '➕ จองเวรเพิ่ม',
-    cancelButtonText: 'ปิดหน้าต่าง',
-    confirmButtonColor: '#3b82f6',
-    cancelButtonColor: '#94a3b8',
-    reverseButtons: true,
-    background: '#f8fafc',
-    borderRadius: '2rem',
-    customClass: { title: 'font-black text-slate-800 leading-tight', popup: 'p-6' }
-  }).then(async (res) => {
-    if(res.isConfirmed) {
-      // ตรวจสอบชื่อก่อนจองใหม่
-      if(!currentStaff) return Swal.fire({ icon: 'warning', title: 'โปรดเลือกชื่อก่อน', borderRadius: '2rem' });
-      
-      const { value: type } = await Swal.fire({ 
-        title: 'ระบุประเภทเวร', 
-        input: 'select', 
-        inputOptions: { 'ด':'ด (ดึก)','ช':'ช (เช้า)','บ':'บ (บ่าย)','x':'x (Off)','vac':'vac (ลาพักร้อน)','อบรม':'อ (อบรม)' },
-        inputPlaceholder: '-- เลือกเวรที่ต้องการ --',
-        borderRadius: '2rem',
-        confirmButtonColor: '#3b82f6'
-      }); 
-
-      if(type) { 
-        showProgress('กำลังบันทึกการจอง...'); 
-        await callAPI('saveBooking', 'POST', { data: {date, name: currentStaff, type} }); 
-        refresh(); 
-      } 
-    }
+    html, showCancelButton: true, confirmButtonText: '➕ จองเวรเพิ่ม', cancelButtonText: 'ปิดหน้าต่าง',
+    confirmButtonColor: '#3b82f6', background: '#f8fafc', borderRadius: '2rem'
   }); 
+
+  if(res.isConfirmed) {
+    let targetName = currentStaff;
+
+    // ถ้าเป็น Admin ให้เลือกก่อนว่าจะจองให้ใคร
+    if (isAdmin) {
+      const staffOptions = {};
+      appData.staff.forEach(s => staffOptions[s[0].trim()] = s[0]);
+      const { value: selectedStaff } = await Swal.fire({
+        title: 'จองเวรให้ใคร?',
+        input: 'select',
+        inputOptions: staffOptions,
+        inputPlaceholder: '-- เลือกเจ้าหน้าที่ --',
+        showCancelButton: true,
+        borderRadius: '2rem'
+      });
+      if (!selectedStaff) return;
+      targetName = selectedStaff;
+    }
+
+    if(!targetName || targetName === 'Admin') return Swal.fire('โปรดเลือกชื่อก่อน', '', 'warning');
+    
+    const { value: type } = await Swal.fire({ 
+      title: `จองเวรให้: ${targetName}`, 
+      input: 'select', 
+      inputOptions: { 'ด':'ด (ดึก)','ช':'ช (เช้า)','บ':'บ (บ่าย)','x':'x (Off)','vac':'vac (ลาพักร้อน)','อบรม':'อ (อบรม)' },
+      borderRadius: '2rem', confirmButtonColor: '#3b82f6'
+    }); 
+
+    if(type) { 
+      showProgress('กำลังบันทึก...'); 
+      await callAPI('saveBooking', 'POST', { data: {date, name: targetName, type} }); 
+      refresh(); 
+    } 
+  } 
 }
     // ฟังก์ชันลบเวรตัวเอง
 async function deleteMyBooking(date, name) {
