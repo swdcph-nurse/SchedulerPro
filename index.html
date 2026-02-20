@@ -539,7 +539,7 @@
     }
 
     // --- 3. DATA LOADING ---
-    async function handleMonthYearChange() {
+   async function handleMonthYearChange() {
   const mIn = document.getElementById('runMonth'), yIn = document.getElementById('runYear'); 
   if(!mIn || !yIn) return;
   
@@ -547,11 +547,14 @@
   const prevMIdx = (m === 0) ? 11 : m - 1;
   const prevYBE = (m === 0) ? yearBE - 1 : yearBE;
 
+  // --- จุดแก้ไขสำคัญ: คำนวณจำนวนวันจริงของเดือนนี้ (28, 29, 30, 31) ---
+  const daysCount = new Date(y, m + 1, 0).getDate();
+
   const container = document.querySelector('.table-container');
   // 1. แสดงตัวโหลด (Loading Overlay)
   const loader = document.createElement('div');
   loader.id = 'table-loader';
-  loader.className = 'calendar-loading-overlay'; // ใช้ Class เดิมที่สร้างไว้เพื่อความสวยงาม
+  loader.className = 'calendar-loading-overlay'; 
   loader.innerHTML = `
     <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 mb-4"></div>
     <p class="font-bold text-blue-600">กำลังรวบรวมข้อมูลเวรล่าสุด...</p>
@@ -564,7 +567,6 @@
     
     // 2. ดึงข้อมูลจากฐานข้อมูล
     if (currentGroup === 'combined_rn') {
-      // กรณีรวม RN (ปาริฉัตร + สงฆ์)
       const [resP, resM] = await Promise.all([ 
         callAPI('getAppData', 'POST', { group: 'nurse_p' }), 
         callAPI('getAppData', 'POST', { group: 'nurse_m' }) 
@@ -578,31 +580,49 @@
         callAPI('loadSchedule', 'POST', { month: m, year: y, group: 'nurse_m' }) 
       ]);
       
+      // สร้าง Draft ที่มีจำนวนวันครบถ้วนตามเดือน (เช่น 31 วัน)
       const combinedSched = constructInitialDraft(m, y, activeStaffOrder);
+      
       [savedP, savedM].forEach(saved => {
         if (saved && saved.schedule) {
           saved.schedule.forEach((savedDay, dIdx) => {
+            // ตรวจสอบ dIdx เพื่อไม่ให้เกินจำนวนวันที่มีในเดือนปัจจุบัน
             if (combinedSched[dIdx]) {
               savedDay.assignments.forEach(assign => {
                 let target = combinedSched[dIdx].assignments.find(a => a.name.trim() === assign.name.trim());
-                if (target && assign.type !== 'x') { target.type = assign.type; target.isBooked = assign.isBooked; }
+                if (target && assign.type !== 'x') { 
+                  target.type = assign.type; 
+                  target.isBooked = assign.isBooked; 
+                }
               });
             }
           });
         }
       });
       currentSchedule = combinedSched;
-      savedData = savedP; // ใช้ Metadata จากฝั่ง Nurse P เป็นหลัก
+      savedData = savedP; 
     } else {
-      // กรณีโหมดปกติ (Nurse P, Nurse M หรือ Asst)
       await refresh(false); 
       savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
       
+      // กำหนดรายชื่อเจ้าหน้าที่หลัก
+      activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim());
+
       if (savedData && savedData.schedule) { 
-        activeStaffOrder = (savedData.staffOrder && savedData.staffOrder.length > 0) ? savedData.staffOrder : appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
-        currentSchedule = savedData.schedule; 
+        // --- จุดแก้ไขสำคัญ: ตรวจสอบว่าข้อมูลเก่ามีจำนวนวันครบหรือไม่ ---
+        if (savedData.schedule.length < daysCount) {
+          // ถ้าข้อมูลเก่ามีวันไม่ครบ (เช่น บันทึกไว้ 30 วันแต่เดือนนี้มี 31) ให้ใช้ Draft 31 วันแล้วเอาข้อมูลเก่าทับ
+          let freshDraft = constructInitialDraft(m, y, activeStaffOrder);
+          savedData.schedule.forEach((day, idx) => {
+            if(freshDraft[idx]) freshDraft[idx] = day;
+          });
+          currentSchedule = freshDraft;
+        } else {
+          currentSchedule = savedData.schedule; 
+        }
+        // ตรวจสอบ Staff Order จากที่บันทึกไว้
+        if(savedData.staffOrder && savedData.staffOrder.length > 0) activeStaffOrder = savedData.staffOrder;
       } else { 
-        activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก" && s[0].trim() !== "").map(s => s[0].trim()); 
         currentSchedule = constructInitialDraft(m, y, activeStaffOrder); 
       }
     }
@@ -621,13 +641,12 @@
     // 4. จัดการหมายเหตุ (Remark)
     const remarkBox = document.getElementById('scheduleRemark');
     if (remarkBox) {
-      // หากเคยบันทึกไว้ให้ใช้ค่าเดิม หากไม่เคยให้ใช้ค่า Default ของโหมดนั้นๆ
       remarkBox.value = (savedData && savedData.remark) ? savedData.remark : getDefaultRemark();
       syncPrintRemark(remarkBox.value);
     }
 
     // 5. จัดการวันหยุดเพิ่มเติม (Extra Holidays)
-    buildHolidayChecks(); // วาด Checkbox ใหม่ตามจำนวนวันในเดือน
+    buildHolidayChecks(); 
     if (savedData && savedData.extraHolidays) {
       const hds = savedData.extraHolidays;
       document.querySelectorAll('.extra-h').forEach(cb => {
@@ -910,10 +929,37 @@
     function populateSelectors() { const now = new Date(); let nextM = now.getMonth() + 1, targetY = now.getFullYear(); if (nextM > 11) { nextM = 0; targetY++; } document.querySelectorAll('.year-selector').forEach(sel => { sel.innerHTML = `<option value="${now.getFullYear()}">${now.getFullYear() + 543}</option><option value="${now.getFullYear() + 1}">${now.getFullYear() + 544}</option>`; sel.value = targetY; }); ['bookMonth', 'runMonth'].forEach(id => { const el = document.getElementById(id); if(!el) return; el.innerHTML = ""; mNames.forEach((name, i) => el.innerHTML += `<option value="${i}">${name}</option>`); el.value = nextM; }); }
     function updateWorkDayCount() { const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), extraH = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value), daysCount = new Date(y, m + 1, 0).getDate(); let count = 0; for (let d = 1; d <= daysCount; d++) { const day = new Date(y, m, d).getDay(); if (day !== 0 && day !== 6 && !extraH.includes(d.toString().padStart(2, '0'))) count++; } currentWorkDays = count; if(document.getElementById('workDayDisplay')) document.getElementById('workDayDisplay').innerText = `📅 วันปฏิบัติงาน: ${currentWorkDays} วัน`; }
     function buildHolidayChecks() { const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), container = document.getElementById('holidayCheck'); if(!container) return; container.innerHTML = ""; const daysCount = new Date(y, m+1, 0).getDate(); for(let d=1; d<=daysCount; d++) { container.innerHTML += `<label class="px-1.5 border rounded bg-white cursor-pointer hover:bg-blue-50 text-[10px]"><input type="checkbox" onchange="updateWorkDayCount(); renderTable();" value="${d.toString().padStart(2,'0')}" class="extra-h mr-0.5">${d}</label>`; } }
-    function constructInitialDraft(m, y, staffNames) { const daysCount = new Date(y, parseInt(m) + 1, 0).getDate(); let skeleton = []; for (let d = 1; d <= daysCount; d++) { const dStr = `${y}-${String(parseInt(m) + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; let dayAssigns = []; staffNames.forEach(name => { const booking = appData.bookings ? appData.bookings.find(b => b.date === dStr && b.name.trim() === name.trim()) : null; dayAssigns.push({ name: name.trim(), type: booking ? booking.type : 'x', isBooked: !!booking }); }); skeleton.push({ date: dStr, assignments: dayAssigns }); } return skeleton; }
+function constructInitialDraft(m, y, staffNames) { 
+  const daysCount = new Date(y, parseInt(m) + 1, 0).getDate(); 
+  let skeleton = []; 
+  for (let d = 1; d <= daysCount; d++) { // วนลูปตามจำนวนวันที่แท้จริง (1-31)
+    const dStr = `${y}-${String(parseInt(m) + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; 
+    let dayAssigns = []; 
+    staffNames.forEach(name => { 
+      const booking = appData.bookings ? appData.bookings.find(b => b.date === dStr && b.name.trim() === name.trim()) : null; 
+      dayAssigns.push({ name: name.trim(), type: booking ? booking.type : 'x', isBooked: !!booking }); 
+    }); 
+    skeleton.push({ date: dStr, assignments: dayAssigns }); 
+  } 
+  return skeleton; 
+}    
     function initTableSortable() { const el = document.getElementById('dutyBody'); if(sortableTable) sortableTable.destroy(); sortableTable = new Sortable(el, { handle: '.row-drag-handle', animation: 150, onEnd: () => { activeStaffOrder = Array.from(document.querySelectorAll('#dutyBody tr')).map(tr => tr.getAttribute('data-name')); } }); }
     async function toggleTableSize(expand) { const table = document.getElementById('mainTable'); if (!table) return; table.style.width = expand ? 'max-content' : '100%'; renderTable(); }
-    async function handleShiftChange(name, dIdx, el) { let day = currentSchedule[dIdx]; let assign = day.assignments.find(a => a.name.trim() === name.trim()); if(assign) { assign.type = el.value; renderTable(); } }
+async function handleShiftChange(name, dIdx, el) { 
+  // ตรวจสอบว่า currentSchedule มีข้อมูลของวันที่เลือกหรือไม่
+  if (!currentSchedule[dIdx]) {
+      console.error("ไม่พบข้อมูลสำหรับวันที่ดัชนี:", dIdx);
+      return;
+  }
+  
+  let day = currentSchedule[dIdx]; 
+  let assign = day.assignments.find(a => a.name.trim() === name.trim()); 
+  
+  if(assign) { 
+    assign.type = el.value; 
+    renderTable(); // สั่งวาดตารางใหม่เพื่อคำนวณสถิติวันที่ 31
+  } 
+}
 async function saveSchedule() {
   const m = document.getElementById('runMonth').value;
   const y = document.getElementById('runYear').value;
