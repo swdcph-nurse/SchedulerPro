@@ -231,6 +231,19 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+    .day-locked { 
+    background-color: #f1f5f9 !important; 
+    cursor: not-allowed !important; 
+    position: relative;
+}
+.day-locked::after {
+    content: '🔒';
+    position: absolute; top: 5px; right: 5px; font-size: 12px;
+}
+.limit-badge {
+    font-size: 9px; padding: 2px 5px; border-radius: 4px;
+    background: #fee2e2; color: #ef4444; font-weight: 800;
+}
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -336,6 +349,30 @@
     </div>
 
     <main class="max-w-[98%] mx-auto px-2 pb-12">
+      <!-- Tab 0: Admin lock -->
+      <div id="admin-lock-panel" class="mb-8 bg-rose-50 p-6 rounded-[2rem] border-2 border-rose-100 no-print" style="display:none;">
+        <h4 class="font-black text-rose-700 mb-4 flex items-center gap-2">
+            <span class="text-xl">🛡️</span> แผงควบคุมการล็อกวันจอง (Admin Only)
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="text-xs font-bold text-rose-400 block mb-1">เลือกวันที่ต้องการล็อก</label>
+                <input type="date" id="lockDate" class="w-full p-3 rounded-xl border-none shadow-sm font-bold">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-rose-400 block mb-1">จำกัดจำนวนคนจอง (คน/วัน)</label>
+                <input type="number" id="lockLimit" value="5" class="w-full p-3 rounded-xl border-none shadow-sm font-bold">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-rose-400 block mb-1">หมายเหตุการล็อก (จะแสดงให้ จนท. เห็น)</label>
+                <input type="text" id="lockNote" placeholder="เช่น เต็มแล้ว / ปิดจอง" class="w-full p-3 rounded-xl border-none shadow-sm">
+            </div>
+        </div>
+        <div class="mt-4 flex gap-2">
+            <button onclick="saveLockDay()" class="bg-rose-600 text-white px-6 py-2 rounded-xl font-bold shadow-md hover:bg-rose-700 transition-all">🔒 ยืนยันการล็อกวันนี้</button>
+            <button onclick="clearLockDay()" class="bg-white text-rose-600 px-6 py-2 rounded-xl font-bold border border-rose-200">🔓 ปลดล็อกวัน</button>
+        </div>
+    </div>
       <!-- Tab 1: Booking -->
       <div id="tab-booking" class="tab-content tab-active">
         <div class="bg-white p-4 rounded-2xl border mb-4 no-print shadow-sm">
@@ -442,6 +479,7 @@
     // --- 1. GLOBAL STATE ---
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyZgCWhHspAeFDKTHDQprJYXPy4nXzIGKplSg_rLNBcWRKr_7GfEK_dVZ6laXU8mco8Eg/exec";
     let isAdmin = false;
+    let lockSettings = {};
     let currentGroup = "", appData = { staff: [], bookings: [] }, currentSchedule = [], currentWorkDays = 0, currentTargets = [], currentStaff = "", isFinished = false, activeStaffOrder = [];
     let sortableTable; 
     const mNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -795,7 +833,7 @@
     const first = new Date(y, m, 1).getDay();
     const daysCount = new Date(y, m + 1, 0).getDate();
 
-    // ล้างเฉพาะเนื้อหาปฏิทินเดิม (แต่เก็บตัวโหลดไว้ถ้ามี)
+    // ล้างเนื้อหาเดิม
     const existingLoader = document.getElementById('cal-loader');
     grid.innerHTML = '';
     if (existingLoader) grid.appendChild(existingLoader);
@@ -810,6 +848,26 @@
     for(let d=1; d<=daysCount; d++) {
         const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const bks = appData.bookings ? appData.bookings.filter(b => b.date === dStr) : [];
+        
+        // --- [เพิ่มเติม] ส่วนตรวจสอบการล็อกและโควตาคนจอง ---
+        const lockInfo = lockSettings[dStr];
+        const dayBookingsCount = bks.length;
+        let lockTag = "";
+
+        if (lockInfo) {
+            if (lockInfo.locked) {
+                // แสดงแม่กุญแจและหมายเหตุแอดมิน
+                lockTag = `<div class="text-[9px] text-rose-500 font-bold leading-none mb-1">🔒 ${lockInfo.note || 'Locked'}</div>`;
+            }
+            if (dayBookingsCount >= lockInfo.limit) {
+                // แสดงสถานะจองเต็ม
+                lockTag += `<div class="inline-block px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded text-[9px] font-black">เต็ม (${dayBookingsCount}/${lockInfo.limit})</div>`;
+            } else if (lockInfo.limit < 99) {
+                // แสดงจำนวนคงเหลือ (กรณีแอดมินตั้ง Limit ไว้)
+                lockTag += `<div class="inline-block px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded text-[9px] font-bold">รับได้อีก ${lockInfo.limit - dayBookingsCount}</div>`;
+            }
+        }
+
         let bkHtml = bks.map(b => `
             <div class="tag-booking ${getCalendarTagColorClass(b.type)}">
                 <span class="truncate">${getCleanName(b.name)}</span>
@@ -819,7 +877,10 @@
         
         grid.innerHTML += `
             <div class="calendar-day bg-white min-h-[120px] p-2 border-t border-r border-slate-100 cursor-pointer hover:bg-blue-50/50 transition-colors" onclick="showDayDetails('${dStr}')">
-                <span class="text-[14px] font-black opacity-30">${d}</span>
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-[14px] font-black opacity-30">${d}</span>
+                    <div class="text-right">${lockTag}</div>
+                </div>
                 <div class="flex flex-col mt-1 gap-1">${bkHtml}</div>
             </div>`;
     }
@@ -987,7 +1048,35 @@ async function saveSchedule() {
   Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
 }
     function handleMonthChange(tab) { if (tab === 'booking') renderCalendar(); else if (tab === 'schedule') handleMonthYearChange(); }
-    async function updateCurrentStaff() { 
+    function updateCurrentStaff() {
+    currentStaff = document.getElementById('staffSelect').value;
+    const adminPanel = document.getElementById('admin-lock-panel');
+    // ถ้าเลือก Admin Mode ให้แสดงแผงควบคุมล็อก
+    if(currentStaff === 'Admin') {
+        adminPanel.style.display = 'block';
+    } else {
+        adminPanel.style.display = 'none';
+    }
+    loadLockConfig();
+    renderCalendar();
+}
+    // 2. โหลดและบันทึกค่าล็อก
+async function loadLockConfig() {
+    const res = await callAPI('getLockConfig');
+    lockSettings = res || {};
+}
+
+async function saveLockDay() {
+    const date = document.getElementById('lockDate').value;
+    const limit = document.getElementById('lockLimit').value;
+    const note = document.getElementById('lockNote').value;
+    if(!date) return Swal.fire('โปรดเลือกวัน','','warning');
+    
+    lockSettings[date] = { locked: true, limit: parseInt(limit), note: note };
+    await callAPI('saveLockConfig', 'POST', { data: lockSettings });
+    Swal.fire('ล็อกวันสำเร็จ','','success');
+    renderCalendar();
+}
     const select = document.getElementById('staffSelect');
     const val = select.value;
     
@@ -1029,6 +1118,24 @@ async function saveSchedule() {
     
 async function showDayDetails(date) { 
   const bks = appData.bookings.filter(b => b.date === date); 
+  const isAdmin = (currentStaff === 'Admin');
+  
+  // --- [เพิ่มเติม] ตรวจสอบสถานะการล็อกและโควตาจอง ---
+  const lockInfo = lockSettings[date];
+  const dayBookingsCount = bks.length;
+  let isLockedForUser = false;
+  let lockMessage = "";
+
+  if (!isAdmin && lockInfo) {
+    if (lockInfo.locked) {
+      isLockedForUser = true;
+      lockMessage = `วันที่นี้ถูกล็อกโดยแอดมิน: ${lockInfo.note || 'ไม่ระบุเหตุผล'}`;
+    } else if (dayBookingsCount >= lockInfo.limit) {
+      isLockedForUser = true;
+      lockMessage = `ยอดจองเต็มแล้ว (จำกัด ${lockInfo.limit} ท่านต่อวัน)`;
+    }
+  }
+
   let html = `<div class="flex flex-col gap-2 mt-4">`; 
   
   if(bks.length === 0) {
@@ -1043,7 +1150,7 @@ async function showDayDetails(date) {
       const hasPermission = isAdmin || (currentStaff && b.name.trim() === currentStaff.trim());
 
       html += `
-        <div class="flex items-center justify-between p-3 bg-white border rounded-2xl shadow-sm hover:border-blue-300">
+        <div class="flex items-center justify-between p-3 bg-white border rounded-2xl shadow-sm hover:border-blue-300 transition-all">
           <div class="flex items-center gap-3 text-left">
             <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${getCleanName(b.name).charAt(0)}</div>
             <div>
@@ -1055,8 +1162,8 @@ async function showDayDetails(date) {
             <div class="tag-booking ${colorClass} px-3 py-1 rounded-lg text-xs font-black min-w-[40px] flex items-center justify-center">${b.type}</div>
             ${hasPermission ? `
               <div class="flex gap-1 no-print">
-                <button onclick="editMyBooking('${date}', '${b.name}', '${b.type}')" class="p-1.5 bg-amber-50 text-amber-600 rounded-lg"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                <button onclick="deleteMyBooking('${date}', '${b.name}')" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                <button onclick="editMyBooking('${date}', '${b.name}', '${b.type}')" class="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                <button onclick="deleteMyBooking('${date}', '${b.name}')" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
               </div>` : ''}
           </div>
         </div>`;
@@ -1064,16 +1171,24 @@ async function showDayDetails(date) {
   }
   html += `</div>`; 
 
+  // ปรับแต่งปุ่มยืนยัน: หากถูกล็อกจะซ่อนปุ่มจองเพิ่ม (สำหรับ User ทั่วไป)
   const res = await Swal.fire({ 
     title: `📅 รายละเอียดการจอง\n<span class="text-sm font-bold text-blue-600">${date}</span>`, 
-    html, showCancelButton: true, confirmButtonText: '➕ จองเวรเพิ่ม', cancelButtonText: 'ปิดหน้าต่าง',
-    confirmButtonColor: '#3b82f6', background: '#f8fafc', borderRadius: '2rem'
+    html, 
+    showCancelButton: true, 
+    confirmButtonText: isLockedForUser ? '🚫 ถูกล็อกการจอง' : '➕ จองเวรเพิ่ม', 
+    cancelButtonText: 'ปิดหน้าต่าง',
+    confirmButtonColor: isLockedForUser ? '#cbd5e1' : '#3b82f6', 
+    confirmButtonDisabled: isLockedForUser,
+    footer: isLockedForUser ? `<span class="text-rose-500 font-bold text-xs">⚠️ ${lockMessage}</span>` : '',
+    background: '#f8fafc', 
+    borderRadius: '2rem'
   }); 
 
-  if(res.isConfirmed) {
+  // ถ้ากดจองเพิ่ม และไม่ได้ถูกล็อก
+  if(res.isConfirmed && !isLockedForUser) {
     let targetName = currentStaff;
 
-    // ถ้าเป็น Admin ให้เลือกก่อนว่าจะจองให้ใคร
     if (isAdmin) {
       const staffOptions = {};
       appData.staff.forEach(s => staffOptions[s[0].trim()] = s[0]);
@@ -1095,7 +1210,8 @@ async function showDayDetails(date) {
       title: `จองเวรให้: ${targetName}`, 
       input: 'select', 
       inputOptions: { 'ด':'ด (ดึก)','ช':'ช (เช้า)','บ':'บ (บ่าย)','x':'x (Off)','vac':'vac (ลาพักร้อน)','อบรม':'อ (อบรม)' },
-      borderRadius: '2rem', confirmButtonColor: '#3b82f6'
+      borderRadius: '2rem', 
+      confirmButtonColor: '#3b82f6'
     }); 
 
     if(type) { 
