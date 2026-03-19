@@ -611,16 +611,45 @@
 
     // 2. ฟังก์ชัน Export ตารางเป็นไฟล์ Excel
     function exportExcel() {
-      const table = document.getElementById('mainTable');
-      if (!table) return Swal.fire('ข้อผิดพลาด', 'ไม่พบตารางข้อมูล', 'error');
-      
+      if (typeof currentSchedule === 'undefined' || currentSchedule.length === 0) {
+        return Swal.fire('ข้อผิดพลาด', 'ไม่มีข้อมูลตารางเวรให้ Export', 'error');
+      }
+
       const mNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
       const m = parseInt(document.getElementById('runMonth').value);
-      const y = parseInt(document.getElementById('runYear').value) + 543; // ปี พ.ศ.
+      const y = parseInt(document.getElementById('runYear').value) + 543;
       const fileName = `ตารางเวร_${mNames[m]}_${y}.xlsx`;
 
-      // ใช้ไลบรารี XLSX (SheetJS) ที่คุณดึงเข้ามาในโค้ดอยู่แล้ว
-      const wb = XLSX.utils.table_to_book(table, {sheet: "Schedule"});
+      // สร้างข้อมูล Array 2 มิติ สำหรับทำเป็นตาราง Excel
+      let aoa = [];
+      
+      // สร้าง Header (แถวบนสุด - วันที่)
+      let header = ['ชื่อ-สกุล'];
+      currentSchedule.forEach(day => {
+        let d = new Date(day.date).getDate();
+        header.push(d.toString());
+      });
+      aoa.push(header);
+
+      // สร้างข้อมูลแต่ละคน (แถวพนักงาน)
+      activeStaffOrder.forEach(staff => {
+        let row = [staff];
+        currentSchedule.forEach(day => {
+          let assign = day.assignments.find(a => a.name === staff);
+          let type = assign ? assign.type : '';
+          
+          // หากค่าเป็น x (ไม่ได้ลงเวร) ให้แปลงเป็นช่องว่างใน Excel เพื่อความสะอาดตา
+          if (type.toLowerCase() === 'x') type = ''; 
+          
+          row.push(type);
+        });
+        aoa.push(row);
+      });
+
+      // ใช้ SheetJS แปลง Array เป็น Sheet
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Schedule");
       XLSX.writeFile(wb, fileName);
     }
 
@@ -630,29 +659,47 @@
     }
 
     // 4. ฟังก์ชันคัดลอกตาราง (Copy to Clipboard)
-    function copyTableToClipboard() {
-      const table = document.getElementById('mainTable');
-      if (!table) return;
+    async function copyTableToClipboard() {
+      if (typeof currentSchedule === 'undefined' || currentSchedule.length === 0) {
+        return Swal.fire('ข้อผิดพลาด', 'ไม่มีข้อมูลตารางเวร', 'error');
+      }
+
+      let tsv = 'ชื่อ-สกุล\t';
       
-      const range = document.createRange();
-      range.selectNode(table);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-      
+      // สร้าง Header วันที่
+      currentSchedule.forEach(day => {
+        let d = new Date(day.date).getDate();
+        tsv += d + '\t';
+      });
+      tsv += '\n';
+
+      // ดึงค่าการจัดเวรของแต่ละคนมาต่อกันด้วย Tab (\t) เพื่อให้ลงคอลัมน์ Excel พอดี
+      activeStaffOrder.forEach(staff => {
+        tsv += staff + '\t';
+        currentSchedule.forEach(day => {
+          let assign = day.assignments.find(a => a.name === staff);
+          let type = assign ? assign.type : '';
+          
+          if (type.toLowerCase() === 'x') type = '';
+          
+          tsv += type + '\t';
+        });
+        tsv += '\n';
+      });
+
+      // สั่ง Copy ลง Clipboard ของเครื่อง
       try {
-        document.execCommand('copy');
+        await navigator.clipboard.writeText(tsv);
         Swal.fire({
           icon: 'success',
           title: 'คัดลอกแล้ว',
-          text: 'คุณสามารถนำไปวางใน Excel, Word หรือแอปอื่นๆ ได้เลย',
-          timer: 2000,
+          text: 'ข้อมูลถูกคลีนเรียบร้อย นำไปวาง (Ctrl+V) ใน Excel หรือ Google Sheets ได้เลยครับ',
+          timer: 2500,
           showConfirmButton: false
         });
       } catch (err) {
-        Swal.fire('ข้อผิดพลาด', 'เบราว์เซอร์ของคุณไม่รองรับการคัดลอก ให้ใช้การคลุมดำแล้วกด Ctrl+C แทน', 'error');
+        Swal.fire('ข้อผิดพลาด', 'เบราว์เซอร์ของคุณไม่รองรับการคัดลอกอัตโนมัติ', 'error');
       }
-      sel.removeAllRanges();
     }
 
     window.onload = populateSelectors;
