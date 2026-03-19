@@ -556,6 +556,104 @@
     async function editMyBooking(date, name, oldType) { const { value: newType } = await Swal.fire({ title:'แก้ไขประเภทเวร', input:'select', inputOptions:{'ด':'ดึก','ช':'เช้า','บ่าย':'บ่าย','x':'Off','vac':'ลาพักร้อน','อบรม':'อบรม'}, inputValue:oldType, borderRadius: '1.5rem', confirmButtonText: 'อัปเดต' }); if(newType && newType!==oldType){ showProgress('กำลังอัปเดต...'); await callAPI('deleteBooking','POST',{date, name}); await callAPI('saveBooking','POST',{data:{date, name, type:newType}}); await refresh(false); Swal.close(); showDayDetails(date); } }
     async function deleteMyBooking(date, name) { if(await Swal.fire({title:'ยืนยันการลบการจอง?', text: `วันที่ ${date}`, icon:'warning', showCancelButton: true, borderRadius: '1.5rem', confirmButtonText: 'ลบข้อมูล'}).then(r=>r.isConfirmed)) { showProgress('กำลังลบการจอง...'); await callAPI('deleteBooking','POST',{date, name}); await refresh(false); Swal.close(); showDayDetails(date); } }
     async function openAddSupportModal() { const pool = appData.staff.filter(s => (s[2]||"").trim()==="เสริม" && !activeStaffOrder.includes(s[0].trim())); if(pool.length===0) return Swal.fire('ข้อมูล','ไม่มีรายชื่อกำลังเสริมที่ยังไม่ถูกเพิ่ม','info'); const opt={}; pool.forEach(s=>opt[s[0].trim()]=s[0]); const {value:name}=await Swal.fire({title:'เพิ่มกำลังเสริม',input:'select',inputOptions:opt,showCancelButton:true,borderRadius: '1.5rem'}); if(name){ activeStaffOrder.push(name); currentSchedule.forEach(day => { if(!day.assignments.find(a=>a.name===name)) day.assignments.push({name, type:'', isBooked:false}); }); renderTable(); } }
+    // 1. ฟังก์ชันสำหรับปุ่ม AI จัดเวรอัตโนมัติ
+    async function processAuto() {
+      const m = parseInt(document.getElementById('runMonth').value);
+      const y = parseInt(document.getElementById('runYear').value);
+      
+      // ดึงข้อมูลวันหยุดพิเศษที่ผู้ใช้ติ๊กเลือกไว้
+      const extraHolidays = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value);
+      
+      // ดึงข้อมูลโควตาอัตรากำลังจากหน้าจอ
+      const q = {
+        wd_r_n: document.getElementById('q_wd_r_n') ? document.getElementById('q_wd_r_n').value : 0,
+        wd_r_m: document.getElementById('q_wd_r_m') ? document.getElementById('q_wd_r_m').value : 0,
+        wd_r_a: document.getElementById('q_wd_r_a') ? document.getElementById('q_wd_r_a').value : 0,
+        wd_s_n: document.getElementById('q_wd_s_n') ? document.getElementById('q_wd_s_n').value : 0,
+        wd_s_m: document.getElementById('q_wd_s_m') ? document.getElementById('q_wd_s_m').value : 0,
+        wd_s_a: document.getElementById('q_wd_s_a') ? document.getElementById('q_wd_s_a').value : 0,
+        hd_r_n: document.getElementById('q_hd_r_n') ? document.getElementById('q_hd_r_n').value : 0,
+        hd_r_m: document.getElementById('q_hd_r_m') ? document.getElementById('q_hd_r_m').value : 0,
+        hd_r_a: document.getElementById('q_hd_r_a') ? document.getElementById('q_hd_r_a').value : 0,
+        hd_s_n: document.getElementById('q_hd_s_n') ? document.getElementById('q_hd_s_n').value : 0,
+        hd_s_m: document.getElementById('q_hd_s_m') ? document.getElementById('q_hd_s_m').value : 0,
+        hd_s_a: document.getElementById('q_hd_s_a') ? document.getElementById('q_hd_s_a').value : 0
+      };
+
+      showProgress('กำลังให้ AI วิเคราะห์และจัดเวร...');
+      
+      // เรียกใช้งาน API เพื่อประมวลผลจัดเวร
+      const res = await callAPI('generate', 'POST', {
+        month: m,
+        year: y,
+        extraHolidays: extraHolidays,
+        q: q,
+        activeStaffNames: activeStaffOrder
+      });
+
+      if (res && res.schedule) {
+        currentSchedule = res.schedule;
+        if (res.targets) currentTargets = res.targets;
+        
+        renderTable(); // วาดตารางใหม่หลังจัดเวรเสร็จ
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: 'AI จัดเวรเรียบร้อยแล้ว!',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } else {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถจัดเวรอัตโนมัติได้', 'error');
+      }
+    }
+
+    // 2. ฟังก์ชัน Export ตารางเป็นไฟล์ Excel
+    function exportExcel() {
+      const table = document.getElementById('mainTable');
+      if (!table) return Swal.fire('ข้อผิดพลาด', 'ไม่พบตารางข้อมูล', 'error');
+      
+      const mNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const m = parseInt(document.getElementById('runMonth').value);
+      const y = parseInt(document.getElementById('runYear').value) + 543; // ปี พ.ศ.
+      const fileName = `ตารางเวร_${mNames[m]}_${y}.xlsx`;
+
+      // ใช้ไลบรารี XLSX (SheetJS) ที่คุณดึงเข้ามาในโค้ดอยู่แล้ว
+      const wb = XLSX.utils.table_to_book(table, {sheet: "Schedule"});
+      XLSX.writeFile(wb, fileName);
+    }
+
+    // 3. ฟังก์ชันสั่งพิมพ์ตาราง (Print)
+    function printTable() {
+      window.print();
+    }
+
+    // 4. ฟังก์ชันคัดลอกตาราง (Copy to Clipboard)
+    function copyTableToClipboard() {
+      const table = document.getElementById('mainTable');
+      if (!table) return;
+      
+      const range = document.createRange();
+      range.selectNode(table);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      
+      try {
+        document.execCommand('copy');
+        Swal.fire({
+          icon: 'success',
+          title: 'คัดลอกแล้ว',
+          text: 'คุณสามารถนำไปวางใน Excel, Word หรือแอปอื่นๆ ได้เลย',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } catch (err) {
+        Swal.fire('ข้อผิดพลาด', 'เบราว์เซอร์ของคุณไม่รองรับการคัดลอก ให้ใช้การคลุมดำแล้วกด Ctrl+C แทน', 'error');
+      }
+      sel.removeAllRanges();
+    }
 
     window.onload = populateSelectors;
     document.addEventListener('change', (e) => { if(e.target.id === 'lockMode') { const specRow = document.getElementById('specLimitRow'); if(specRow) specRow.style.display = e.target.value === 'blocked' ? 'none' : 'grid'; } });
