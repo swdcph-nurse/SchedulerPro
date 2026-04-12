@@ -279,7 +279,7 @@
 
   <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyZgCWhHspAeFDKTHDQprJYXPy4nXzIGKplSg_rLNBcWRKr_7GfEK_dVZ6laXU8mco8Eg/exec";
-    let isAdmin = false, lockSettings = {}, currentGroup = "", appData = { staff: [], bookings: [] }, currentSchedule = [], currentWorkDays = 0, currentTargets = [], currentStaff = "", activeStaffOrder = [];
+    let isAdmin = false, lockSettings = {}, currentGroup = "", appData = { staff: [], bookings: [] }, currentSchedule = [], currentWorkDays = 0, currentTargets = [], currentStaff = "", activeStaffOrder = [], currentExtraHolidays = [];
     let sortableTable; 
     const mNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
     const dNames = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
@@ -290,6 +290,25 @@
     function getShiftColorClass(type) { if(!type) return ''; const t = type.toString().trim(); if(t.includes('ด')) return 'text-ด'; if(t.includes('ช')) return 'text-ช'; if(t.includes('บ')) return 'text-บ'; return 'text-rose-500'; }
     function getCalendarTagColorClass(type) { if(!type) return 'type-red'; const t = type.toString().trim(); if(t.includes('ด')) return 'type-ด'; if(t.includes('ช')) return 'type-ช'; if(t.includes('บ')) return 'type-บ'; return 'type-red'; }
     function getCleanName(fullName) { if(!fullName) return ""; return fullName.replace(/^(นาย|นางสาว|นาง|พยาบาล)\s?/, "").split(" ")[0]; }
+    function getSelectedExtraHolidays() { return Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value); }
+    function setSelectedExtraHolidays(days = []) { const selected = new Set((days || []).map(String)); document.querySelectorAll('.extra-h').forEach(el => { el.checked = selected.has(el.value); }); currentExtraHolidays = Array.from(selected); }
+    function syncExtraHolidaySelection() { currentExtraHolidays = getSelectedExtraHolidays(); updateWorkDayCount(); renderTable(); }
+    function isExtraHolidayDay(day) { return currentExtraHolidays.includes(day.toString().padStart(2, '0')); }
+    function getAssignmentSummary(type) {
+        const val = (type || "").trim();
+        const shiftMatches = val === "อบรม" || val.includes("R") ? [] : (val.match(/[ดชบ]/g) || []);
+        return {
+            d: val.includes('ด') ? 1 : 0,
+            m: val.includes('ช') ? 1 : 0,
+            a: val.includes('บ') ? 1 : 0,
+            v: val === 'vac' ? 1 : 0,
+            t: val === 'อบรม' ? 1 : 0,
+            r: val.includes('R') ? 1 : 0,
+            s: (val.match(/\*/g) || []).length,
+            total: val !== "" && val !== "x" && !val.includes('R') ? (val === "อบรม" ? 1 : shiftMatches.length) : 0,
+            isCountableShift: val !== "" && val !== "x" && val !== "vac" && val !== "อบรม" && !val.includes('R')
+        };
+    }
 
     async function selectMode(mode) { 
         currentGroup = mode; isAdmin = false; currentStaff = "";
@@ -323,7 +342,7 @@
         const tab = document.getElementById('tab-' + id); if (tab) tab.classList.add('tab-active');
         document.querySelectorAll('header nav button').forEach(b => b.classList.remove('bg-blue-600', 'text-white')); 
         const btn = document.getElementById('btn-' + id); if (btn) btn.classList.add('bg-blue-600', 'text-white');
-        if(id === 'schedule') { buildHolidayChecks(); updateWorkDayCount(); handleMonthYearChange(); } 
+        if(id === 'schedule') { handleMonthYearChange(); } 
         else if(id === 'booking') renderCalendar();
         else if(id === 'settings') updateUI();
         window.scrollTo(0, 0);
@@ -407,8 +426,18 @@
         try {
             let savedData = await callAPI('loadSchedule', 'POST', { month: m, year: y });
             activeStaffOrder = appData.staff.filter(s => (s[2] || "หลัก").trim() === "หลัก").map(s => s[0].trim());
-            if (savedData && savedData.schedule) { currentSchedule = savedData.schedule; if(savedData.staffOrder) activeStaffOrder = savedData.staffOrder; } 
-            else { currentSchedule = constructInitialDraft(m, y, activeStaffOrder); }
+            if (savedData && savedData.schedule) {
+                currentSchedule = savedData.schedule;
+                if(savedData.staffOrder) activeStaffOrder = savedData.staffOrder;
+                currentTargets = savedData.targets || [];
+                currentWorkDays = savedData.workDays || 0;
+                currentExtraHolidays = Array.isArray(savedData.extraHolidays) ? savedData.extraHolidays : [];
+            } 
+            else {
+                currentSchedule = constructInitialDraft(m, y, activeStaffOrder);
+                currentTargets = [];
+                currentExtraHolidays = [];
+            }
             document.getElementById('table-title').innerHTML = `บัญชีแนบท้ายคำสั่งโรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน ที่ <input id="orderNum" class="border-b w-12 text-center" value="${savedData?.orderNum||''}">/${yearBE} ลงวันที่ <input id="issuedDate" class="border-b w-24 text-center" value="${savedData?.issuedDate||''}">`;
             document.getElementById('sub-header').innerHTML = `สำหรับงานการพยาบาลผู้ป่วยในพิเศษปาริฉัตร และงานการพยาบาลผู้ป่วยในสงฆ์อาพาธ ประจำเดือน ${mNames[m]} พ.ศ. ${yearBE}`;
             const remBox = document.getElementById('scheduleRemark'); remBox.value = savedData?.remark || getDefaultRemark();
@@ -430,7 +459,7 @@
         let h2 = `<tr>`;
         
         for(let d=1; d<=daysCount; d++) {
-            const dObj = new Date(y, m, d), isH = (dObj.getDay()===0||dObj.getDay()===6||Array.from(document.querySelectorAll('.extra-h:checked')).some(el=>el.value==d.toString().padStart(2,'0')));
+            const dObj = new Date(y, m, d), isH = (dObj.getDay()===0||dObj.getDay()===6||isExtraHolidayDay(d));
             h1 += `<th class="${isH?'bg-holiday':''} text-center font-bold">${d}</th>`; 
             h2 += `<th class="${isH?'bg-holiday text-[10px]':''} text-center font-bold">${dNames[dObj.getDay()]}</th>`;
         }
@@ -452,15 +481,21 @@
             for(let d=1; d<=daysCount; d++) {
                 const assign = currentSchedule[d-1]?.assignments.find(a => a.name.trim() === name.trim());
                 let val = (assign ? assign.type : "").trim();
-                if(val === 'อบรม') c.t++; else if(val.includes('R')) c.r++; else { if(val.includes('ด')) c.d++; if(val.includes('ช')) c.m++; if(val.includes('บ')) c.a++; }
-                if(val === 'vac') c.v++; if(val.includes('*')) c.s++;
-                if(val !== "" && val !== "x" && !val.includes('R')) c.total += (val === 'อบรม' ? 1 : (val.match(/[ดชบ]/g)||[]).length);
-                if(val !== "" && val !== "x" && val !== "vac" && val !== "อบรม" && !val.includes('R')) {
-                    if(val.includes('ด')) { dStats[d-1]['ด']++; dStats[d-1]['total']++; }
-                    if(val.includes('ช')) { dStats[d-1]['ช']++; dStats[d-1]['total']++; }
-                    if(val.includes('บ')) { dStats[d-1]['บ']++; dStats[d-1]['total']++; }
+                const summary = getAssignmentSummary(val);
+                c.d += summary.d;
+                c.m += summary.m;
+                c.a += summary.a;
+                c.v += summary.v;
+                c.t += summary.t;
+                c.r += summary.r;
+                c.s += summary.s;
+                c.total += summary.total;
+                if(summary.isCountableShift) {
+                    if(summary.d) { dStats[d-1]['ด'] += summary.d; dStats[d-1]['total'] += summary.d; }
+                    if(summary.m) { dStats[d-1]['ช'] += summary.m; dStats[d-1]['total'] += summary.m; }
+                    if(summary.a) { dStats[d-1]['บ'] += summary.a; dStats[d-1]['total'] += summary.a; }
                 }
-                const isH = (new Date(y, m, d).getDay()===0||new Date(y, m, d).getDay()===6||Array.from(document.querySelectorAll('.extra-h:checked')).some(el=>el.value==d.toString().padStart(2,'0')));
+                const isH = (new Date(y, m, d).getDay()===0||new Date(y, m, d).getDay()===6||isExtraHolidayDay(d));
                 row += `<td class="${isH?'bg-holiday':''} ${assign?.isBooked?'cell-booked':''}"><select class="${getShiftColorClass(val)} bg-transparent w-full text-center outline-none" onchange="handleShiftChange('${name}', ${d-1}, this)">`;
                 ["", "x", "ด", "ช", "บ", "ดบ", "ชบ", "ด*", "ช*", "บ*", "ด*บ", "ดบ*", "ช*บ", "ชบ*", "ด*บ*", "ช*บ*", "vac", "อบรม", "ชR", "บR", "ดR", "ช5", "ช5บ", "ช5บ*"].forEach(opt => {
                     let display = opt === "" ? "" : (opt === "อบรม" ? "อ" : opt);
@@ -542,10 +577,43 @@
         ['bookMonth', 'runMonth'].forEach(id => { const el = document.getElementById(id); if(el) { el.innerHTML = mNames.map((n, i) => `<option value="${i}">${n}</option>`).join(''); el.value = nextM; } }); 
     }
 
-    function buildHolidayChecks() { const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), container = document.getElementById('holidayCheck'), days = new Date(y, m+1, 0).getDate(); container.innerHTML = ""; for(let d=1; d<=days; d++) container.innerHTML += `<label class="px-1.5 border rounded cursor-pointer text-[10px]"><input type="checkbox" onchange="updateWorkDayCount(); renderTable();" value="${d.toString().padStart(2,'0')}" class="extra-h m-0">${d}</label>`; }
-    function updateWorkDayCount() { const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), extra = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value), days = new Date(y, m+1, 0).getDate(); let count = 0; for(let d=1; d<=days; d++) { const day = new Date(y, m, d).getDay(); if(day!==0 && day!==6 && !extra.includes(d.toString().padStart(2,'0'))) count++; } document.getElementById('workDayDisplay').innerText = `📅 วันปฏิบัติงาน: ${count} วัน`; }
+    function buildHolidayChecks() {
+        const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), container = document.getElementById('holidayCheck'), days = new Date(y, m+1, 0).getDate();
+        container.innerHTML = "";
+        for(let d=1; d<=days; d++) container.innerHTML += `<label class="px-1.5 border rounded cursor-pointer text-[10px]"><input type="checkbox" onchange="syncExtraHolidaySelection()" value="${d.toString().padStart(2,'0')}" class="extra-h m-0">${d}</label>`;
+        setSelectedExtraHolidays(currentExtraHolidays);
+    }
+    function updateWorkDayCount() {
+        const m = parseInt(document.getElementById('runMonth').value), y = parseInt(document.getElementById('runYear').value), days = new Date(y, m+1, 0).getDate();
+        currentExtraHolidays = getSelectedExtraHolidays();
+        let count = 0;
+        for(let d=1; d<=days; d++) {
+            const day = new Date(y, m, d).getDay();
+            if(day!==0 && day!==6 && !currentExtraHolidays.includes(d.toString().padStart(2,'0'))) count++;
+        }
+        currentWorkDays = count;
+        document.getElementById('workDayDisplay').innerText = `📅 วันปฏิบัติงาน: ${count} วัน`;
+        return count;
+    }
     function handleShiftChange(name, dIdx, el) { if(currentSchedule[dIdx]) { let a = currentSchedule[dIdx].assignments.find(x => x.name.trim() === name.trim()); if(a) { a.type = el.value; renderTable(); } } }
-    async function saveSchedule() { showProgress('กำลังบันทึกตารางเวร...'); await callAPI('saveSchedule','POST',{month:document.getElementById('runMonth').value, year:document.getElementById('runYear').value, schedule:currentSchedule, staffOrder:activeStaffOrder, remark:document.getElementById('scheduleRemark').value, orderNum:document.getElementById('orderNum').value, issuedDate:document.getElementById('issuedDate').value}); Swal.fire('สำเร็จ','บันทึกข้อมูลตารางเวรเรียบร้อย','success'); }
+    async function saveSchedule() {
+        currentExtraHolidays = getSelectedExtraHolidays();
+        updateWorkDayCount();
+        showProgress('กำลังบันทึกตารางเวร...');
+        await callAPI('saveSchedule','POST',{
+            month:document.getElementById('runMonth').value,
+            year:document.getElementById('runYear').value,
+            schedule:currentSchedule,
+            targets:currentTargets,
+            workDays:currentWorkDays,
+            staffOrder:activeStaffOrder,
+            remark:document.getElementById('scheduleRemark').value,
+            orderNum:document.getElementById('orderNum').value,
+            issuedDate:document.getElementById('issuedDate').value,
+            extraHolidays:currentExtraHolidays
+        });
+        Swal.fire('สำเร็จ','บันทึกข้อมูลตารางเวรเรียบร้อย','success');
+    }
     function initTableSortable() { const el = document.getElementById('dutyBody'); if(sortableTable) sortableTable.destroy(); sortableTable = new Sortable(el, { handle: '.row-drag-handle', animation: 150, onEnd: () => { activeStaffOrder = Array.from(document.querySelectorAll('#dutyBody tr[data-name]')).map(tr => tr.getAttribute('data-name')); } }); }
     function toggleCalendarLoading(show, target = document.getElementById('calendarGrid')) { if(show) { const l = document.createElement('div'); l.id = 'cal-loader'; l.className = 'calendar-loading-overlay'; l.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600 mb-4"></div>`; target.appendChild(l); } else { const l = document.getElementById('cal-loader'); if(l) l.remove(); } }
     function syncPrintRemark(v) { document.getElementById('printRemarkDisplay').innerText = v; }
@@ -553,7 +621,7 @@
     function handleMonthChange(tab) { if(tab==='booking') renderCalendar(); else handleMonthYearChange(); }
     function clearScheduleUI() { if(confirm('คุณต้องการล้างข้อมูลเวรที่ไม่ได้จองไว้ใช่หรือไม่?')) { currentSchedule.forEach(d => d.assignments.forEach(a => { if(!a.isBooked) a.type=''; })); renderTable(); } }
     function toggleTableSize(expand) { const table = document.getElementById('mainTable'); if (table) table.style.width = expand ? 'max-content' : '100%'; }
-    async function editMyBooking(date, name, oldType) { const { value: newType } = await Swal.fire({ title:'แก้ไขประเภทเวร', input:'select', inputOptions:{'ด':'ดึก','ช':'เช้า','บ่าย':'บ่าย','x':'Off','vac':'ลาพักร้อน','อบรม':'อบรม'}, inputValue:oldType, borderRadius: '1.5rem', confirmButtonText: 'อัปเดต' }); if(newType && newType!==oldType){ showProgress('กำลังอัปเดต...'); await callAPI('deleteBooking','POST',{date, name}); await callAPI('saveBooking','POST',{data:{date, name, type:newType}}); await refresh(false); Swal.close(); showDayDetails(date); } }
+    async function editMyBooking(date, name, oldType) { const { value: newType } = await Swal.fire({ title:'แก้ไขประเภทเวร', input:'select', inputOptions:{'ด':'ดึก','ช':'เช้า','บ':'บ่าย','x':'Off','vac':'ลาพักร้อน','อบรม':'อบรม'}, inputValue:oldType, borderRadius: '1.5rem', confirmButtonText: 'อัปเดต' }); if(newType && newType!==oldType){ showProgress('กำลังอัปเดต...'); await callAPI('deleteBooking','POST',{date, name}); await callAPI('saveBooking','POST',{data:{date, name, type:newType}}); await refresh(false); Swal.close(); showDayDetails(date); } }
     async function deleteMyBooking(date, name) { if(await Swal.fire({title:'ยืนยันการลบการจอง?', text: `วันที่ ${date}`, icon:'warning', showCancelButton: true, borderRadius: '1.5rem', confirmButtonText: 'ลบข้อมูล'}).then(r=>r.isConfirmed)) { showProgress('กำลังลบการจอง...'); await callAPI('deleteBooking','POST',{date, name}); await refresh(false); Swal.close(); showDayDetails(date); } }
     async function openAddSupportModal() { const pool = appData.staff.filter(s => (s[2]||"").trim()==="เสริม" && !activeStaffOrder.includes(s[0].trim())); if(pool.length===0) return Swal.fire('ข้อมูล','ไม่มีรายชื่อกำลังเสริมที่ยังไม่ถูกเพิ่ม','info'); const opt={}; pool.forEach(s=>opt[s[0].trim()]=s[0]); const {value:name}=await Swal.fire({title:'เพิ่มกำลังเสริม',input:'select',inputOptions:opt,showCancelButton:true,borderRadius: '1.5rem'}); if(name){ activeStaffOrder.push(name); currentSchedule.forEach(day => { if(!day.assignments.find(a=>a.name===name)) day.assignments.push({name, type:'', isBooked:false}); }); renderTable(); } }
     // 1. ฟังก์ชันสำหรับปุ่ม AI จัดเวรอัตโนมัติ
@@ -562,7 +630,8 @@
       const y = parseInt(document.getElementById('runYear').value);
       
       // ดึงข้อมูลวันหยุดพิเศษที่ผู้ใช้ติ๊กเลือกไว้
-      const extraHolidays = Array.from(document.querySelectorAll('.extra-h:checked')).map(el => el.value);
+      currentExtraHolidays = getSelectedExtraHolidays();
+      const extraHolidays = currentExtraHolidays;
       
       // ดึงข้อมูลโควตาอัตรากำลังจากหน้าจอ
       const q = {
@@ -594,6 +663,7 @@
       if (res && res.schedule) {
         currentSchedule = res.schedule;
         if (res.targets) currentTargets = res.targets;
+        if (typeof res.workDays === 'number') currentWorkDays = res.workDays;
         
         renderTable(); // วาดตารางใหม่หลังจัดเวรเสร็จ
         
